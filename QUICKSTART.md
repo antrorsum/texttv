@@ -68,7 +68,7 @@ uv run texttv search "fotboll" --start 150 --end 159
 
 ### Simple synchronous usage
 ```python
-from src.texttv_parser import SyncTextTVParser
+from texttv import SyncTextTVParser
 
 parser = SyncTextTVParser()
 

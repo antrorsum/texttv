@@ -5,8 +5,8 @@ import json
 from pathlib import Path
 from datetime import datetime
 
-from src.texttv_parser import TextTVParser, SyncTextTVParser
-from src.texttv_parser.models import TextTVPage
+from texttv import TextTVParser, SyncTextTVParser
+from texttv.models import TextTVPage
 
 
 def example_basic_file_parsing():

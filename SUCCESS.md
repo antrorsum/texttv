@@ -39,7 +39,7 @@ The real texttv.nu API returns:
 
 ### Files Created/Updated
 ```
-✓ src/texttv_parser/
+✓ src/texttv/
   ├── models.py         - TextTVPage model for texttv.nu API
   ├── parser.py         - Parsing logic with HTTP client
   ├── cli.py            - Command-line interface
@@ -125,7 +125,7 @@ uv run python fetch_real_data.py 100
 
 ### 3. Use in Python
 ```python
-from src.texttv_parser import SyncTextTVParser
+from texttv import SyncTextTVParser
 
 parser = SyncTextTVParser()
 page = parser.parse_from_file("index.txt")
@@ -211,7 +211,7 @@ uv run python fetch_real_data.py 100 --save
 ### Integration Example
 ```python
 import httpx
-from src.texttv_parser import SyncTextTVParser
+from texttv import SyncTextTVParser
 
 def get_latest_news():
     """Fetch and parse latest news."""

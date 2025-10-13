@@ -11,7 +11,7 @@ import sys
 import json
 import httpx
 from pathlib import Path
-from src.texttv_parser import SyncTextTVParser
+from texttv import SyncTextTVParser
 
 
 def fetch_page(page_number: str, save: bool = False):

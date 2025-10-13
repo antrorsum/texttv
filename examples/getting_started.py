@@ -8,7 +8,7 @@ Run this script to explore the TextTV Parser features interactively.
 import sys
 from pathlib import Path
 from datetime import datetime
-from src.texttv_parser import SyncTextTVParser
+from texttv import SyncTextTVParser
 
 
 def print_header(text):
@@ -94,7 +94,7 @@ def demo_python_api():
 
     print_section("Synchronous Usage:")
     print("""
-from src.texttv_parser import SyncTextTVParser
+from texttv import SyncTextTVParser
 
 parser = SyncTextTVParser()
 page = parser.parse_from_file(str(Path(__file__).parent.parent / "index.txt"))
@@ -107,7 +107,7 @@ if page:
     print_section("Asynchronous Usage:")
     print("""
 import asyncio
-from src.texttv_parser import TextTVParser
+from texttv import TextTVParser
 
 async def main():
     async with TextTVParser() as parser:
@@ -175,7 +175,7 @@ def main():
   1. Try the CLI commands above
   2. Run the example scripts
   3. Read the documentation
-  4. Explore the source code in src/texttv_parser/
+  4. Explore the source code in src/texttv/
   5. Run the tests: uv run pytest
   6. Build your own TextTV applications!
 

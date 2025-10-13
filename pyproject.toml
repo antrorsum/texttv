@@ -13,7 +13,7 @@ dependencies = [
 ]
 
 [project.scripts]
-texttv = "src.texttv_parser.cli:app"
+texttv = "texttv.cli:app"
 
 [project.optional-dependencies]
 dev = [
@@ -27,7 +27,7 @@ dev = [
 package = true
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/texttv_parser"]
+packages = ["src/texttv"]
 
 [build-system]
 requires = ["hatchling"]

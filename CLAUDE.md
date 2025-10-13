@@ -114,7 +114,7 @@ The API returns a list with one page object. The parser handles both list format
 
 ### Text Cleaning Algorithm
 
-Located in `TextTVPage.get_clean_text()` ([models.py](src/texttv_parser/models.py)):
+Located in `TextTVPage.get_clean_text()` ([models.py](src/texttv/models.py)):
 
 1. Parses HTML content with BeautifulSoup
 2. Removes script and style tags
@@ -151,13 +151,13 @@ This project uses `uv` (not pip/poetry). Always use `uv run` to execute commands
 ## Common Development Patterns
 
 ### Modifying Text Cleaning
-- Edit `TextTVPage.get_clean_text()` in [models.py](src/texttv_parser/models.py)
+- Edit `TextTVPage.get_clean_text()` in [models.py](src/texttv/models.py)
 - The method uses BeautifulSoup to parse HTML and extract text
 - Consider Swedish character handling (å, ä, ö) when modifying
 - Test with real API data from [index.txt](index.txt)
 
 ### Adding New CLI Commands
-1. Add `@app.command()` decorated function in [cli.py](src/texttv_parser/cli.py)
+1. Add `@app.command()` decorated function in [cli.py](src/texttv/cli.py)
 2. Use Rich Console for output formatting
 3. Use Typer for argument/option parsing
 4. Follow existing patterns for error handling and user feedback

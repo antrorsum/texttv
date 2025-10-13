@@ -2,7 +2,7 @@
 
 import asyncio
 from pathlib import Path
-from src.texttv_parser import TextTVParser, SyncTextTVParser
+from texttv import TextTVParser, SyncTextTVParser
 
 
 def example_sync_usage():

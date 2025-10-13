@@ -73,7 +73,7 @@ uv run texttv search "fotboll" --start 150 --end 159
 
 ### Synchronous API
 ```python
-from src.texttv_parser import SyncTextTVParser
+from texttv import SyncTextTVParser
 
 parser = SyncTextTVParser()
 
@@ -90,7 +90,7 @@ page = parser.parse_from_file("index.txt")
 ### Asynchronous API
 ```python
 import asyncio
-from src.texttv_parser import TextTVParser
+from texttv import TextTVParser
 
 async def main():
     async with TextTVParser() as parser:

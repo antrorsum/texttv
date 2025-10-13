@@ -5,7 +5,7 @@
 ```
 texttv/
 ├── src/
-│   └── texttv_parser/
+│   └── texttv/
 │       ├── __init__.py      # Package initialization
 │       ├── models.py        # Pydantic data models
 │       ├── parser.py        # Core parsing logic

@@ -1,7 +1,7 @@
 """Main entry point for TextTV Parser demonstration."""
 
 from pathlib import Path
-from src.texttv_parser.parser import SyncTextTVParser
+from texttv.parser import SyncTextTVParser
 
 
 def main():

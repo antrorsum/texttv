@@ -3,8 +3,8 @@
 import json
 from pathlib import Path
 import pytest
-from src.texttv_parser.models import TextTVPage
-from src.texttv_parser.parser import SyncTextTVParser
+from texttv.models import TextTVPage
+from texttv.parser import SyncTextTVParser
 
 
 @pytest.fixture
