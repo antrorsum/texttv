@@ -1,8 +1,8 @@
-# TextTV API Formats
+# TextTV API Format
 
-The TextTV Parser supports **two different API formats** to ensure compatibility with various TextTV data sources.
+The TextTV Parser supports the **texttv.nu API format** used by Swedish TextTV APIs.
 
-## Format 1: Real TextTV API (texttv.nu)
+## Real TextTV API (texttv.nu)
 
 This is the **actual format** used by Swedish TextTV APIs like `https://api.texttv.nu/api/get/100`.
 
@@ -45,53 +45,6 @@ response = httpx.get("https://api.texttv.nu/api/get/100?app=yourapp")
 data = response.json()
 ```
 
-## Format 2: Structured Position Format
-
-This is a **structured format** with positioned text elements (for testing or custom APIs).
-
-### Structure
-```json
-{
-  "page": {
-    "number": "100",
-    "title": "Nyheter",
-    "content": [
-      {
-        "type": "text",
-        "data": "Regeringen presenterar ny klimatpolitik",
-        "position": {"row": 5, "col": 1}
-      }
-    ],
-    "updated": "2024-10-13T10:30:00Z",
-    "subpage": 1,
-    "total_subpages": 5
-  }
-}
-```
-
-### Characteristics
-- Single page object wrapped in `{"page": {...}}`
-- Content is **structured** with position data
-- Uses ISO 8601 timestamps
-- Includes subpage information
-
-## Parser Auto-Detection
-
-The parser **automatically detects** which format your data uses:
-
-```python
-from src.texttv_parser import SyncTextTVParser
-
-parser = SyncTextTVParser()
-
-# Works with both formats!
-page = parser.parse_from_file("real_api_data.json")
-page = parser.parse_from_file("structured_data.json")
-
-# Both return a TextTVPage object
-print(page.get_clean_text())
-```
-
 ## Working with Real API
 
 ### Download and Parse
@@ -125,20 +78,20 @@ async def fetch_and_parse():
 
 ## Text Cleaning
 
-Both formats are converted to a common `TextTVPage` object that provides:
+The parser converts TextTV pages to a `TextTVPage` object that provides:
 
 ```python
 # Get cleaned, readable text
 clean_text = page.get_clean_text()
 
 # Access metadata
-print(f"Page: {page.number}")
+print(f"Page: {page.num}")
 print(f"Title: {page.title}")
-print(f"Updated: {page.updated}")
+print(f"Updated: {page.date_updated_unix}")
 ```
 
 ### Cleaning Process
-1. **Extract text** from HTML (for real API) or positions (for structured)
+1. **Extract text** from HTML
 2. **Remove headers** (SVT TEXT, page numbers)
 3. **Remove navigation** elements
 4. **Clean whitespace** and empty lines
@@ -172,7 +125,7 @@ page = parser.parse_from_file("page100_raw.json")
 with open("page100_clean.txt", "w") as f:
     f.write(page.get_clean_text())
 
-print(f"✓ Fetched and parsed page {page.number}: {page.title}")
+print(f"✓ Fetched and parsed page {page.num}: {page.title}")
 ```
 
 ## API Endpoints
@@ -195,12 +148,9 @@ print(f"✓ Fetched and parsed page {page.number}: {page.title}")
 - Some content includes images (background images in spans)
 - Links are preserved as `<a href="/page">` elements
 - The parser handles Swedish characters (å, ä, ö) correctly
-- Both formats are converted to UTF-8 encoding
+- Data is converted to UTF-8 encoding
 
 ## Troubleshooting
-
-### "1 validation error for TextTVResponse"
-This error occurred with old code that didn't support the real API format. **Now fixed!** The parser auto-detects the format.
 
 ### Empty or Garbled Text
 - Check that the JSON file is valid
@@ -223,4 +173,4 @@ To add support for another API format:
 
 ---
 
-**Status**: ✅ Both formats fully supported!
+**Status**: ✅ Real API format fully supported!

@@ -104,34 +104,30 @@ asyncio.run(main())
 ## Understanding the Output
 
 ### Raw data structure
-TextTV pages come with positioned content:
+TextTV pages from texttv.nu API:
 ```json
-{
-  "page": {
-    "number": "100",
-    "title": "Nyheter",
-    "content": [
-      {
-        "type": "text",
-        "data": "  Some text here  ",
-        "position": {"row": 5, "col": 1}
-      }
-    ]
-  }
-}
+[{
+  "num": "100",
+  "title": "Nyheter",
+  "content": ["<div>...HTML content...</div>"],
+  "date_updated_unix": 1697200000,
+  ...
+}]
 ```
 
 ### Cleaned output
-The parser extracts and cleans the text:
+The parser extracts and cleans the text from HTML:
 ```
 Some text here
 ```
 
 Removes:
+- HTML tags and structure
 - Excessive whitespace
-- Page headers (SVT TEXT, Sida X)
+- Page headers (SVT TEXT)
 - Navigation menus
 - Empty lines
+- Duplicate consecutive lines
 
 ## Testing
 

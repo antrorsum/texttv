@@ -23,10 +23,7 @@ texttv/
 ## Architecture
 
 ### Models (models.py)
-- **TextTVPosition**: Row/column position on page
-- **TextTVContent**: Individual content item (text, color, etc.)
-- **TextTVPage**: Complete page with metadata
-- **TextTVResponse**: API response wrapper
+- **TextTVPage**: Complete page with metadata from texttv.nu API
 
 ### Parser (parser.py)
 - **TextTVParser**: Async API client
@@ -45,47 +42,44 @@ Commands:
 
 ## Data Flow
 
-1. **Raw API/File Data** → JSON with positioned content
+1. **Raw API/File Data** → JSON with HTML content from texttv.nu
 2. **Pydantic Parsing** → Validated TextTVPage objects
-3. **Text Cleaning** → `get_clean_text()` extracts readable content
+3. **Text Cleaning** → `get_clean_text()` extracts readable content from HTML
 4. **Output** → Clean text or structured data
 
 ## Text Cleaning Algorithm
 
 The `get_clean_text()` method:
-1. Filters text-type content items
-2. Sorts by row position
-3. Strips whitespace from each line
-4. Removes empty lines
-5. Filters out headers (SVT TEXT, Sida X (Y/Z))
-6. Filters out navigation menus (lines with 3+ page numbers)
-7. Returns cleaned, readable text
+1. Parses HTML content with BeautifulSoup
+2. Removes script and style elements
+3. Extracts text content
+4. Strips whitespace from each line
+5. Removes empty lines
+6. Filters out headers (SVT TEXT) and lone page numbers
+7. Removes duplicate consecutive lines
+8. Returns cleaned, readable text
 
-## API Structure (SVT TextTV)
+## API Structure (texttv.nu)
 
-Typical endpoint: `https://www.svt.se/text-tv/api/pages/{page_number}`
+Endpoint: `https://api.texttv.nu/api/get/{page_number}`
 
 Query parameters:
-- `sub`: Subpage number
+- `app`: Application identifier (recommended)
 
 Response structure:
 ```json
-{
-  "page": {
-    "number": "100",
-    "title": "Nyheter",
-    "content": [
-      {
-        "type": "text",
-        "data": "...",
-        "position": {"row": 1, "col": 1}
-      }
-    ],
-    "updated": "2024-10-13T10:30:00Z",
-    "subpage": 1,
-    "total_subpages": 5
-  }
-}
+[{
+  "num": "100",
+  "title": "Nyheter",
+  "content": ["<div>...HTML content...</div>"],
+  "content_plain": [],
+  "next_page": "101",
+  "prev_page": "99",
+  "date_updated_unix": 1697200000,
+  "permalink": "https://texttv.nu/100",
+  "id": "12345",
+  "breadcrumbs": []
+}]
 ```
 
 ## Testing Strategy
@@ -137,6 +131,7 @@ uv run texttv parse-file index.txt
 **Core:**
 - httpx: Async HTTP client
 - pydantic: Data validation
+- beautifulsoup4: HTML parsing
 - typer: CLI framework
 - rich: Terminal output formatting
 
@@ -151,5 +146,5 @@ uv run texttv parse-file index.txt
 - TextTV uses Teletext format (40x25 character grid)
 - Pages 100-899 are content pages
 - Each page can have multiple subpages
-- Content includes positioning data for proper layout
-- Some pages have color/formatting codes (type: "color")
+- Content is HTML with CSS classes for styling
+- The parser extracts clean text from HTML structure

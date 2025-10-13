@@ -97,15 +97,12 @@ async with TextTVParser() as parser:
 ### Core Components
 
 1. **Models (models.py)**
-   - `TextTVPosition`: Row/column positioning
-   - `TextTVContent`: Individual content items
-   - `TextTVPage`: Complete page with metadata
-   - `TextTVResponse`: API response wrapper
+   - `TextTVPage`: Complete page with metadata from texttv.nu API
 
 2. **Parser (parser.py)**
    - `TextTVParser`: Async HTTP client for API access
    - `SyncTextTVParser`: Synchronous wrapper
-   - File parsing, API fetching, text cleaning
+   - File parsing, API fetching, HTML-to-text cleaning
 
 3. **CLI (cli.py)**
    - `get-page`: Fetch and display pages
@@ -115,30 +112,23 @@ async with TextTVParser() as parser:
 ### Data Flow
 
 ```
-Raw JSON → Pydantic Validation → TextTVPage → Clean Text
+Raw JSON (HTML) → Pydantic Validation → TextTVPage → HTML Parsing → Clean Text
 ```
 
 ## 📊 Sample Data
 
-The `index.txt` file contains a realistic TextTV page:
+The `index.txt` file contains real data from texttv.nu API:
 
 ```json
-{
-  "page": {
-    "number": "100",
-    "title": "Nyheter",
-    "content": [
-      {
-        "type": "text",
-        "data": "  Regeringen presenterar ny klimatpolitik  ",
-        "position": {"row": 5, "col": 1}
-      }
-    ],
-    "updated": "2024-10-13T10:30:00Z",
-    "subpage": 1,
-    "total_subpages": 5
-  }
-}
+[{
+  "num": "100",
+  "title": "Nyheter",
+  "content": ["<div>...HTML content...</div>"],
+  "date_updated_unix": 1697200000,
+  "next_page": "101",
+  "prev_page": "99",
+  ...
+}]
 ```
 
 ## 🧪 Testing
@@ -165,9 +155,9 @@ uv run pytest tests/test_parser.py -v
 ### Core
 - **httpx**: Async HTTP client for API requests
 - **pydantic**: Data validation and serialization
+- **beautifulsoup4**: HTML parsing and text extraction
 - **typer**: CLI framework
 - **rich**: Beautiful terminal output
-- **beautifulsoup4**: HTML parsing (if needed)
 
 ### Development
 - **pytest**: Testing framework
@@ -223,10 +213,11 @@ uv run texttv --help
 ## 🌟 Key Features Demonstrated
 
 ### Text Cleaning Algorithm
+- Parses HTML with BeautifulSoup
 - Removes SVT TEXT headers
-- Filters page numbers (Sida X)
+- Filters lone page numbers
 - Removes navigation menus
-- Cleans whitespace
+- Cleans whitespace and duplicates
 - Preserves actual content
 
 ### Error Handling

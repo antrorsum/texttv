@@ -5,7 +5,7 @@
 A complete **Python application** for parsing Swedish TextTV data using **uv** as the package manager.
 
 ### Core Features
-- ✅ **Dual Format Support**: Automatically handles both real API and structured formats
+- ✅ **API Support**: Handles texttv.nu API format
 - ✅ **HTML Parsing**: Cleans HTML from texttv.nu API
 - ✅ **Text Cleaning**: Removes headers, navigation, and formatting
 - ✅ **CLI Interface**: 3 commands with beautiful rich output
@@ -29,10 +29,10 @@ The real texttv.nu API returns:
 - Different field names (`num` vs `number`)
 
 ### Solution
-1. Created `TextTVRealPage` model for real API format
-2. Added auto-detection in `parse_from_file()`
+1. Created `TextTVPage` model for real API format
+2. Implemented parsing in `parse_from_file()`
 3. Implemented HTML-to-text conversion with BeautifulSoup
-4. Added tests for both formats
+4. Added comprehensive tests
 5. Updated documentation
 
 ## 📊 Current Status
@@ -40,18 +40,18 @@ The real texttv.nu API returns:
 ### Files Created/Updated
 ```
 ✓ src/texttv_parser/
-  ├── models.py         - Added TextTVRealPage model
-  ├── parser.py         - Added format auto-detection
-  ├── cli.py            - Working with both formats
-  └── __init__.py       - Exports updated
+  ├── models.py         - TextTVPage model for texttv.nu API
+  ├── parser.py         - Parsing logic with HTTP client
+  ├── cli.py            - Command-line interface
+  └── __init__.py       - Package exports
 
 ✓ tests/
   ├── test_parser.py    - 5 tests (all passing)
   └── conftest.py       - Test fixtures
 
 ✓ Documentation
-  ├── README.md         - Updated with dual format info
-  ├── API_FORMATS.md    - Complete format documentation
+  ├── README.md         - Main documentation
+  ├── API_FORMATS.md    - API format documentation
   ├── QUICKSTART.md     - Usage guide
   ├── DEVELOPMENT.md    - Architecture notes
   └── PROJECT_SUMMARY.md - Project overview
@@ -128,7 +128,7 @@ uv run python fetch_real_data.py 100
 from src.texttv_parser import SyncTextTVParser
 
 parser = SyncTextTVParser()
-page = parser.parse_from_file("index.txt")  # Works with both formats!
+page = parser.parse_from_file("index.txt")
 
 print(page.title)
 print(page.get_clean_text())
@@ -137,11 +137,10 @@ print(page.get_clean_text())
 ## 📚 Documentation
 
 ### Format Documentation
-- **[API_FORMATS.md](API_FORMATS.md)** - Complete guide to both API formats
+- **[API_FORMATS.md](API_FORMATS.md)** - Complete guide to the API format
   - Real API structure (texttv.nu)
-  - Structured format
-  - Auto-detection
-  - Examples and workflows
+  - Usage examples
+  - Complete workflows
 
 ### User Guides
 - **[README.md](README.md)** - Main documentation
@@ -165,20 +164,9 @@ print(page.get_clean_text())
 - Unix timestamps
 - Navigation links
 
-### Structured Format ✅
-```json
-{"page": {"number": "100", "title": "...", "content": [{...}], ...}}
-```
-- Single page object
-- Positioned text items
-- ISO timestamps
-- Subpage support
-
-**Auto-detected!** No need to specify format.
-
 ## 🧪 Testing
 
-All tests pass with both formats:
+All tests pass:
 
 ```bash
 $ uv run pytest -v
@@ -188,9 +176,9 @@ $ uv run pytest -v
 Tests cover:
 - Model validation
 - Text cleaning
-- File parsing (both formats)
+- File parsing
 - Error handling
-- Real API format conversion
+- API format parsing
 
 ## 📦 Dependencies
 
@@ -243,10 +231,9 @@ def get_latest_news():
 ## 🎓 Key Learnings
 
 1. **Real APIs differ from documentation** - Always test with real data
-2. **Auto-detection is user-friendly** - No need to ask users about format
-3. **BeautifulSoup is essential** - For parsing HTML TextTV content
-4. **Pydantic is flexible** - Can handle multiple input formats
-5. **Tests catch regressions** - All tests still pass after changes
+2. **BeautifulSoup is essential** - For parsing HTML TextTV content
+3. **Pydantic is powerful** - Can handle complex data validation
+4. **Tests catch regressions** - All tests still pass after changes
 
 ## 🌟 What's Next?
 

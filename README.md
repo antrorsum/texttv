@@ -23,7 +23,7 @@ This interactive guide will walk you through all features!
 - 🚀 Async and sync API support
 - 🎯 Type-safe with Pydantic models
 - 💻 CLI interface with rich output
-- 🔄 **Supports both real API and structured formats** (auto-detected!)
+- 🔄 **Supports texttv.nu API format**
 
 ## Installation
 
@@ -108,7 +108,7 @@ asyncio.run(main())
 
 ## Data Structure
 
-The parser works with clean, structured data and **supports two formats**:
+The parser works with the **texttv.nu API format**:
 
 ### Real API Format (texttv.nu)
 ```bash
@@ -119,23 +119,16 @@ curl "https://api.texttv.nu/api/get/100?app=texttv-parser" > news.json
 uv run texttv parse-file news.json --clean
 ```
 
-### Structured Format (for testing)
+### Data Flow
 ```python
-# Raw TextTV data (like in index.txt)
-{
-  "page": {
-    "number": "100",
-    "title": "Nyheter",
-    "content": [
-      {
-        "type": "text",
-        "data": "  Regeringen presenterar ny klimatpolitik  ",
-        "position": {"row": 5, "col": 1}
-      }
-    ],
-    "updated": "2024-10-13T10:30:00Z"
-  }
-}
+# Raw TextTV data from API
+[{
+  "num": "100",
+  "title": "Nyheter",
+  "content": ["<div>...HTML content...</div>"],
+  "date_updated_unix": 1697200000,
+  ...
+}]
 
 # Cleaned output
 page.get_clean_text() returns:
@@ -184,9 +177,7 @@ The real TextTV API:
 - **texttv.nu**: `https://api.texttv.nu/api/get/{page_number}?app=yourapp`
 - Example: `https://api.texttv.nu/api/get/100?app=texttv-parser`
 
-**Format Auto-Detection**: The parser automatically detects whether you're using the real API format or structured format!
-
-See [API_FORMATS.md](API_FORMATS.md) for detailed documentation on both supported formats.
+See [API_FORMATS.md](API_FORMATS.md) for detailed documentation on the API format.
 
 ## License
 
