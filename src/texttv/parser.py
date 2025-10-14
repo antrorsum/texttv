@@ -34,18 +34,21 @@ class TextTVParser:
         """Async context manager exit."""
         await self.client.aclose()
     
-    async def get_page(self, page_number: str, app: str = "texttv-parser") -> Optional[TextTVPage]:
+    async def get_page(self, page_number: str, app: str = "texttv-parser", include_plain_text: bool = False) -> Optional[TextTVPage]:
         """Fetch a specific TextTV page from texttv.nu API.
 
         Args:
             page_number: Page number (e.g., "100", "150")
             app: Application identifier for the API
+            include_plain_text: Include plain text content from API (sets includePlainTextContent=1)
 
         Returns:
             TextTVPage object or None if not found
         """
         url = f"{self.base_url}/{page_number}"
         params = {"app": app}
+        if include_plain_text:
+            params["includePlainTextContent"] = "1"
 
         try:
             response = await self.client.get(url, params=params)
@@ -155,11 +158,20 @@ class SyncTextTVParser:
     def __init__(self, base_url: str = "https://api.texttv.nu/api/get"):
         self.base_url = base_url
 
-    def get_page(self, page_number: str, app: str = "texttv-parser") -> Optional[TextTVPage]:
-        """Synchronously fetch a TextTV page."""
+    def get_page(self, page_number: str, app: str = "texttv-parser", include_plain_text: bool = False) -> Optional[TextTVPage]:
+        """Synchronously fetch a TextTV page.
+
+        Args:
+            page_number: Page number (e.g., "100", "150")
+            app: Application identifier for the API
+            include_plain_text: Include plain text content from API (sets includePlainTextContent=1)
+
+        Returns:
+            TextTVPage object or None if not found
+        """
         async def _get_page():
             async with TextTVParser(self.base_url) as parser:
-                return await parser.get_page(page_number, app)
+                return await parser.get_page(page_number, app, include_plain_text)
 
         return asyncio.run(_get_page())
 

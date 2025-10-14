@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 TextTV Parser is a Python application that parses and cleans data from Sweden's TextTV REST API (texttv.nu). It fetches HTML-based content from the real API and extracts readable text.
 
+**Package Manager**: This project uses `uv` (not pip/poetry). Always use `uv run` to execute commands and `uv sync` to manage dependencies.
+
 ## Essential Commands
 
 ### Development Setup
@@ -40,7 +42,7 @@ uv run black src tests
 # Lint code
 uv run ruff check src tests
 
-# Type checking
+# Type checking (mypy not currently configured in dev dependencies)
 uv run mypy src
 ```
 
@@ -51,6 +53,9 @@ uv run texttv parse-file index.txt --clean
 
 # Fetch live page from texttv.nu API
 uv run texttv get-page 100
+
+# Fetch page with API plain text content
+uv run texttv get-page 100 --include-plain --plain-text
 
 # Search across pages
 uv run texttv search "klimat" --start 100 --end 110
@@ -119,8 +124,8 @@ Located in `TextTVPage.get_clean_text()` ([models.py](src/texttv/models.py)):
 1. Parses HTML content with BeautifulSoup
 2. Removes script and style tags
 3. Extracts text content
-4. Filters lone page numbers (e.g., "101")
-5. Filters "SVT Text" headers
+4. Filters "SVT Text" headers (from the top row)
+5. Preserves reference page numbers (e.g., "130", "136") as they link to related articles
 6. Removes duplicate consecutive lines
 7. Returns cleaned, readable text
 
@@ -135,8 +140,10 @@ Located in `TextTVPage.get_clean_text()` ([models.py](src/texttv/models.py)):
 - Default base URL: `https://api.texttv.nu/api/get`
 - API endpoint pattern: `https://api.texttv.nu/api/get/{page}?app=yourapp`
 - Always include `?app=` parameter when using texttv.nu API
+- Optional: Include `includePlainTextContent=1` to get plain text from API
 - HTTP client uses 30s timeout with custom User-Agent
 - API returns HTML content in the `content` field (array of strings)
+- API returns plain text in `content_plain` field (when `includePlainTextContent=1` is used)
 
 ### TextTV Page Numbering
 - 100-149: News (Nyheter)
@@ -145,15 +152,20 @@ Located in `TextTVPage.get_clean_text()` ([models.py](src/texttv/models.py)):
 - 300-399: Weather (Väder)
 - 400-499: Lottery/Games
 
-### Package Manager
-This project uses `uv` (not pip/poetry). Always use `uv run` to execute commands and `uv sync` to manage dependencies.
-
 ## Common Development Patterns
+
+### Testing Strategy
+- Tests use pytest with fixtures for sample data
+- Sample data mimics the texttv.nu API format (list with single dict)
+- Use `tmp_path` fixture for testing file parsing
+- Test both list format `[{...}]` and dict format `{...}` since parser handles both
+- Key test areas: page parsing, text cleaning, file parsing, API format compatibility
 
 ### Modifying Text Cleaning
 - Edit `TextTVPage.get_clean_text()` in [models.py](src/texttv/models.py)
 - The method uses BeautifulSoup to parse HTML and extract text
 - Consider Swedish character handling (å, ä, ö) when modifying
+- Be careful with number filtering - reference page numbers are important content
 - Test with real API data from [index.txt](index.txt)
 
 ### Adding New CLI Commands
@@ -168,4 +180,36 @@ This project uses `uv` (not pip/poetry). Always use `uv run` to execute commands
 - Title: `page.title` (string)
 - Updated timestamp: `page.date_updated_unix` (int, convert with `datetime.fromtimestamp()`)
 - Navigation: `page.next_page`, `page.prev_page` (optional strings)
-- Clean text: `page.get_clean_text()` (method)
+- Clean text: `page.get_clean_text()` (method - extracts and cleans HTML)
+- API plain text: `page.get_plain_text()` (method - returns plain text from API if available, None otherwise)
+
+### Sample Data Files
+- [index.txt](index.txt): Real API response from page 100, used for testing and examples
+- Contains actual HTML with Swedish characters (å, ä, ö) and TextTV formatting
+- Includes `content_plain` field with API plain text (fetched with `includePlainTextContent=1`)
+- All examples reference this file using `Path(__file__).parent.parent / "index.txt"`
+
+### Text Extraction Methods
+The parser provides three ways to get text from a page:
+
+1. **`page.get_clean_text()`** - Extracts text from HTML and cleans it (recommended)
+   - Parses HTML with BeautifulSoup
+   - Removes navigation elements and "SVT Text" headers
+   - Preserves reference page numbers (they link to related articles)
+   - Removes duplicate consecutive lines
+   - Returns clean, readable text
+
+2. **`page.get_plain_text()`** - Returns plain text from API (if available)
+   - Only available when fetched with `include_plain_text=True` parameter
+   - Returns the `content_plain` field from the API
+   - Preserves original TextTV formatting and spacing
+   - Returns `None` if plain text was not requested
+
+3. **`page.content`** - Raw HTML content array
+   - Original HTML from the API
+   - Useful for custom processing
+
+### Entry Points
+- CLI: `texttv` command (defined in pyproject.toml scripts)
+- Python API: Import from `texttv` package (`from texttv import TextTVParser, SyncTextTVParser`)
+- Package structure: `src/texttv/` contains all source code

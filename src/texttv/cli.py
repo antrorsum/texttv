@@ -24,18 +24,27 @@ def get_page(
     page_number: str = typer.Argument(..., help="Page number (e.g., '100')"),
     output: Optional[Path] = typer.Option(None, "--output", "-o", help="Save to file"),
     clean_only: bool = typer.Option(False, "--clean", "-c", help="Show only cleaned text"),
+    plain_text: bool = typer.Option(False, "--plain-text", "-p", help="Show API plain text (requires includePlainTextContent=1)"),
+    include_plain: bool = typer.Option(False, "--include-plain", help="Include plain text in API request (includePlainTextContent=1)"),
 ):
     """Fetch and display a TextTV page from texttv.nu API."""
     parser = SyncTextTVParser()
 
     with console.status(f"Fetching page {page_number}..."):
-        page = parser.get_page(page_number)
+        page = parser.get_page(page_number, include_plain_text=include_plain)
 
     if not page:
         console.print(f"[red]Failed to fetch page {page_number}[/red]")
         raise typer.Exit(1)
 
-    if clean_only:
+    if plain_text:
+        # Show API plain text
+        api_plain = page.get_plain_text()
+        if api_plain:
+            console.print(Panel(api_plain, title=f"Page {page_number} - {page.title} (API Plain Text)"))
+        else:
+            console.print(f"[yellow]No plain text available. Use --include-plain to request it from API.[/yellow]")
+    elif clean_only:
         text = page.get_clean_text()
         console.print(Panel(text, title=f"Page {page_number} - {page.title}"))
     else:
@@ -49,6 +58,10 @@ def get_page(
         table.add_row("Updated", datetime.fromtimestamp(page.date_updated_unix).strftime("%Y-%m-%d %H:%M:%S"))
         table.add_row("Next Page", page.next_page or "N/A")
         table.add_row("Prev Page", page.prev_page or "N/A")
+
+        # Show if plain text is available
+        if page.get_plain_text():
+            table.add_row("API Plain Text", "Available")
 
         console.print(table)
         console.print("\n")
