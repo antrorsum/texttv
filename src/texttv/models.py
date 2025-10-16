@@ -4,6 +4,7 @@ from datetime import datetime
 from typing import List, Optional
 from pydantic import BaseModel, Field
 from bs4 import BeautifulSoup
+from .terminal_renderer import TerminalRenderer
 
 
 class TextTVPage(BaseModel):
@@ -68,3 +69,22 @@ class TextTVPage(BaseModel):
             prev_line = line
         
         return "\n".join(cleaned_lines).strip()
+
+    def get_colored_text(self, use_bold: bool = True) -> str:
+        """Get colored terminal output with ANSI codes.
+
+        This renders the TextTV page as it would appear on a real TextTV display,
+        with colored backgrounds and text using ANSI escape sequences.
+
+        Args:
+            use_bold: Use bold text for double-height headings
+
+        Returns:
+            Colored text string with ANSI escape codes for terminal display
+        """
+        if not self.content:
+            return ""
+
+        renderer = TerminalRenderer(use_bold_for_double_height=use_bold)
+        html_content = "".join(self.content)
+        return renderer.render_html(html_content)

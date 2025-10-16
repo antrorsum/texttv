@@ -26,6 +26,7 @@ def get_page(
     clean_only: bool = typer.Option(False, "--clean", "-c", help="Show only cleaned text"),
     plain_text: bool = typer.Option(False, "--plain-text", "-p", help="Show API plain text (requires includePlainTextContent=1)"),
     include_plain: bool = typer.Option(False, "--include-plain", help="Include plain text in API request (includePlainTextContent=1)"),
+    colored: bool = typer.Option(False, "--colored", help="Show colored TextTV display with ANSI codes"),
 ):
     """Fetch and display a TextTV page from texttv.nu API."""
     parser = SyncTextTVParser()
@@ -37,7 +38,12 @@ def get_page(
         console.print(f"[red]Failed to fetch page {page_number}[/red]")
         raise typer.Exit(1)
 
-    if plain_text:
+    if colored:
+        # Show colored TextTV display
+        colored_text = page.get_colored_text()
+        # Use built-in print() to preserve ANSI codes (Rich escapes them)
+        print(colored_text)
+    elif plain_text:
         # Show API plain text
         api_plain = page.get_plain_text()
         if api_plain:
@@ -88,20 +94,26 @@ def get_page(
 def parse_file(
     file_path: Path = typer.Argument(..., help="Path to JSON file"),
     clean_only: bool = typer.Option(False, "--clean", "-c", help="Show only cleaned text"),
+    colored: bool = typer.Option(False, "--colored", help="Show colored TextTV display with ANSI codes"),
 ):
     """Parse TextTV data from a local JSON file."""
     if not file_path.exists():
         console.print(f"[red]File not found: {file_path}[/red]")
         raise typer.Exit(1)
-    
+
     parser = SyncTextTVParser()
     page = parser.parse_from_file(str(file_path))
-    
+
     if not page:
         console.print(f"[red]Failed to parse file: {file_path}[/red]")
         raise typer.Exit(1)
-    
-    if clean_only:
+
+    if colored:
+        # Show colored TextTV display
+        colored_text = page.get_colored_text()
+        # Use built-in print() to preserve ANSI codes (Rich escapes them)
+        print(colored_text)
+    elif clean_only:
         console.print(page.get_clean_text())
     else:
         console.print(Panel(page.get_clean_text(), title=f"Page {page.num} - {page.title}"))

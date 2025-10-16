@@ -8,6 +8,8 @@ TextTV Parser is a Python application that parses and cleans data from Sweden's 
 
 **Package Manager**: This project uses `uv` (not pip/poetry). Always use `uv run` to execute commands and `uv sync` to manage dependencies.
 
+**Build System**: Uses Hatchling (configured in pyproject.toml) with package source in `src/texttv/` directory.
+
 ## Essential Commands
 
 ### Development Setup
@@ -51,8 +53,14 @@ uv run mypy src
 # Parse a local file with real API format
 uv run texttv parse-file index.txt --clean
 
+# View colored TextTV display (with ANSI colors)
+uv run texttv parse-file index.txt --colored
+
 # Fetch live page from texttv.nu API
 uv run texttv get-page 100
+
+# Fetch and display with colored TextTV rendering
+uv run texttv get-page 100 --colored
 
 # Fetch page with API plain text content
 uv run texttv get-page 100 --include-plain --plain-text
@@ -82,8 +90,10 @@ uv run python examples/advanced_examples.py
 
 1. **models.py** - Pydantic data model
    - `TextTVPage`: The single page model for texttv.nu API format
-   - Fields: `num` (page number), `title`, `content` (HTML array), `date_updated_unix`, `next_page`, `prev_page`, `permalink`, `id`
+   - Fields: `num` (page number), `title`, `content` (HTML array), `content_plain` (API plain text), `date_updated_unix`, `next_page`, `prev_page`, `permalink`, `id`
    - `get_clean_text()` method extracts readable text from HTML content
+   - `get_plain_text()` returns plain text from API (if available)
+   - `get_colored_text()` renders TextTV display with ANSI color codes
 
 2. **parser.py** - Parsing logic
    - `TextTVParser`: Async HTTP client for API access
@@ -95,6 +105,12 @@ uv run python examples/advanced_examples.py
    - `get-page`: Fetch and display pages from texttv.nu API
    - `parse-file`: Parse local JSON files in texttv.nu format
    - `search`: Search text across page ranges
+
+4. **terminal_renderer.py** - ANSI terminal rendering
+   - `TerminalRenderer`: Converts TextTV HTML with CSS classes to ANSI color codes
+   - Maps TextTV color classes (bgBl, bgW, etc.) to terminal colors
+   - Supports double-height text rendering with bold formatting
+   - Used by `TextTVPage.get_colored_text()` method
 
 ### API Format (texttv.nu)
 
@@ -152,6 +168,40 @@ Located in `TextTVPage.get_clean_text()` ([models.py](src/texttv/models.py)):
 - 300-399: Weather (Väder)
 - 400-499: Lottery/Games
 
+### TextTV Display Format
+- **Standard dimensions**: 40 columns × 24 rows (classic teletext format)
+- The terminal renderer automatically pads each line to exactly 40 characters
+- Padding uses the last background color of the line to maintain visual continuity
+- All 24 rows are preserved, including graphics and decorative elements
+
+### TextTV Graphics (bgImg)
+- TextTV uses custom 13×16 pixel GIF images for graphical characters (logos, weather symbols, decorative elements)
+- These are referenced as `bgImg` class with URLs like `https://l.texttv.nu/storage/chars/693852549.gif`
+- The terminal renderer converts these to Unicode █ (full block) characters with appropriate foreground/background colors
+- This approximates the visual appearance while remaining text-based
+- Example: The "SVT Text" logo on lines 2-5 of page 100 is composed of bgImg characters
+- Weather maps (e.g., page 401) use colored bgImg blocks to show cloud cover, temperature zones, etc.
+
+### Known Limitations
+- **Whitespace collapsing**: HTML parsers (including lxml) collapse multiple consecutive spaces to a single space
+  - This affects text alignment slightly (e.g., some headlines may have 1 space instead of 2)
+  - Lines are still padded to exactly 40 characters, maintaining the overall format
+  - Proper fix would require writing a custom HTML parser that preserves raw whitespace
+- **bgImg graphics**: Currently rendered as solid blocks (█) rather than the actual pixel patterns
+  - The "SVT Text" logo appears as a block pattern rather than clear lettering
+  - Decorative bars and weather symbols are visible but not pixel-perfect
+  - Future enhancement: Download GIFs, analyze pixels, map to Unicode box-drawing characters
+
+### TextTV Color System
+The HTML content uses CSS classes for colors that are mapped to ANSI codes:
+- **Background colors**: `bgBl` (black - standard TextTV background), `bgB` (blue), `bgW` (white), `bgR` (red), `bgG` (green), `bgY` (yellow), `bgC` (cyan), `bgM` (magenta)
+  - **Important**: `Bl` = Black (two letters), `B` = Blue (single letter)
+- **Foreground colors**: `W` (white), `Y` (yellow), `C` (cyan), `R` (red), `G` (green), `B` (black), `M` (magenta), `bl` (blue - lowercase)
+- **Text styles**: `DH` (double-height, rendered as bold in terminal)
+- The TerminalRenderer class handles conversion to ANSI escape codes for terminal display
+- Standard TextTV pages use `bgBl` (black) as the main background color with `Y` (yellow) for headlines and `C` (cyan) for secondary text
+- Uses `lxml` parser to better preserve HTML structure (though HTML parsers still collapse whitespace, so padding is applied)
+
 ## Common Development Patterns
 
 ### Testing Strategy
@@ -182,6 +232,7 @@ Located in `TextTVPage.get_clean_text()` ([models.py](src/texttv/models.py)):
 - Navigation: `page.next_page`, `page.prev_page` (optional strings)
 - Clean text: `page.get_clean_text()` (method - extracts and cleans HTML)
 - API plain text: `page.get_plain_text()` (method - returns plain text from API if available, None otherwise)
+- Colored terminal output: `page.get_colored_text(use_bold=True)` (method - renders with ANSI color codes)
 
 ### Sample Data Files
 - [index.txt](index.txt): Real API response from page 100, used for testing and examples
@@ -190,7 +241,7 @@ Located in `TextTVPage.get_clean_text()` ([models.py](src/texttv/models.py)):
 - All examples reference this file using `Path(__file__).parent.parent / "index.txt"`
 
 ### Text Extraction Methods
-The parser provides three ways to get text from a page:
+The parser provides four ways to get text from a page:
 
 1. **`page.get_clean_text()`** - Extracts text from HTML and cleans it (recommended)
    - Parses HTML with BeautifulSoup
@@ -205,7 +256,14 @@ The parser provides three ways to get text from a page:
    - Preserves original TextTV formatting and spacing
    - Returns `None` if plain text was not requested
 
-3. **`page.content`** - Raw HTML content array
+3. **`page.get_colored_text(use_bold=True)`** - Terminal rendering with ANSI colors
+   - Renders TextTV page as it appears on actual TextTV display
+   - Converts CSS classes (bgBl, bgW, W, Y, etc.) to ANSI escape codes
+   - Supports background and foreground colors
+   - Optional bold formatting for double-height text
+   - Returns string with ANSI codes for terminal display
+
+4. **`page.content`** - Raw HTML content array
    - Original HTML from the API
    - Useful for custom processing
 
