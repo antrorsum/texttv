@@ -88,3 +88,156 @@ class TextTVPage(BaseModel):
         renderer = TerminalRenderer(use_bold_for_double_height=use_bold)
         html_content = "".join(self.content)
         return renderer.render_html(html_content)
+
+    def get_js8call_text(self, compact: bool = False) -> str:
+        r"""Get JS8Call-compatible text with limited character set.
+
+        JS8Call supports:
+        - Uppercase letters A-Z
+        - Numbers 0-9
+        - Space
+        - Common punctuation: ./?+-`~!@#$%^&*()_=[]\{}|;':",&<>
+        - Extended Latin-1: ¡¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞ
+          (includes Swedish Å, Ä, Ö)
+
+        This method:
+        1. Starts with clean text (get_clean_text())
+        2. Converts to uppercase
+        3. Replaces unsupported characters with safe alternatives
+        4. Optionally removes padding/duplicates for compact transmission
+
+        Args:
+            compact: If True, removes padding characters (repeated spaces, dots)
+                    to minimize transmission length. Preserves content letters/numbers.
+
+        Returns:
+            JS8Call-compatible text string (uppercase, limited character set)
+        """
+        # Start with clean text
+        text = self.get_clean_text()
+        if not text:
+            return ""
+
+        # Define JS8Call supported character set
+        # Based on JS8Call documentation: uppercase ASCII, numbers, punctuation, Latin-1 extended
+        js8call_chars = set(
+            "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+            "0123456789"
+            r" ./?+-`~!@#$%^&*()_=[]\{}|;:'\"&<>,"
+            "¡¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛÜÝÞ"
+        )
+
+        # Character mapping for common Swedish characters (lowercase to uppercase)
+        char_map = {
+            'å': 'Å',
+            'ä': 'Ä',
+            'ö': 'Ö',
+            'à': 'À',
+            'á': 'Á',
+            'â': 'Â',
+            'ã': 'Ã',
+            'æ': 'Æ',
+            'ç': 'Ç',
+            'è': 'È',
+            'é': 'É',
+            'ê': 'Ê',
+            'ë': 'Ë',
+            'ì': 'Ì',
+            'í': 'Í',
+            'î': 'Î',
+            'ï': 'Ï',
+            'ð': 'Ð',
+            'ñ': 'Ñ',
+            'ò': 'Ò',
+            'ó': 'Ó',
+            'ô': 'Ô',
+            'õ': 'Õ',
+            'ø': 'Ø',
+            'ù': 'Ù',
+            'ú': 'Ú',
+            'û': 'Û',
+            'ü': 'Ü',
+            'ý': 'Ý',
+            'þ': 'Þ',
+            # Common replacements for unsupported characters
+            '\u2013': '-',  # en dash to hyphen
+            '\u2014': '-',  # em dash to hyphen
+            '\u201c': '"',  # left double quote to straight quote
+            '\u201d': '"',  # right double quote to straight quote
+            '\u2018': "'",  # left single quote to apostrophe
+            '\u2019': "'",  # right single quote to apostrophe
+            '\u2026': '...',  # horizontal ellipsis to three periods
+        }
+
+        # Process text
+        result_lines = []
+        for line in text.split('\n'):
+            # First apply character mapping
+            processed_line = ""
+            for char in line:
+                # Map special characters
+                if char in char_map:
+                    processed_line += char_map[char]
+                else:
+                    processed_line += char
+
+            # Convert to uppercase
+            processed_line = processed_line.upper()
+
+            # Filter to only JS8Call-supported characters
+            filtered_line = ""
+            for char in processed_line:
+                if char in js8call_chars:
+                    filtered_line += char
+                # If character not supported, skip it (already removed dashes, quotes, etc. in mapping)
+
+            # Only add non-empty lines
+            if filtered_line.strip():
+                result_lines.append(filtered_line.strip())
+
+        # Apply compact mode if requested
+        if compact:
+            result_lines = self._compact_js8call_lines(result_lines)
+
+        return "\n".join(result_lines)
+
+    def _compact_js8call_lines(self, lines: list[str]) -> list[str]:
+        """Remove padding characters from JS8Call text for compact transmission.
+
+        Removes:
+        - Multiple consecutive spaces (keeps single space)
+        - Repeated padding dots (e.g., "..." becomes ".")
+        - Repeated padding dashes/hyphens
+
+        Preserves:
+        - All letters and numbers (content)
+        - Single spaces between words
+        - Punctuation that's part of content
+
+        Args:
+            lines: List of text lines to compact
+
+        Returns:
+            Compacted lines with padding removed
+        """
+        import re
+
+        compacted = []
+        for line in lines:
+            # Replace multiple consecutive spaces with single space
+            line = re.sub(r' {2,}', ' ', line)
+
+            # Replace multiple consecutive dots with single dot (padding removal)
+            # But keep intentional ellipsis (already converted from …)
+            line = re.sub(r'\.{2,}', '.', line)
+
+            # Replace multiple consecutive hyphens/dashes with single dash
+            line = re.sub(r'-{2,}', '-', line)
+
+            # Remove trailing/leading padding characters
+            line = line.strip(' .-')
+
+            if line:
+                compacted.append(line)
+
+        return compacted

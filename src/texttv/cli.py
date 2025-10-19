@@ -27,6 +27,8 @@ def get_page(
     plain_text: bool = typer.Option(False, "--plain-text", "-p", help="Show API plain text (requires includePlainTextContent=1)"),
     include_plain: bool = typer.Option(False, "--include-plain", help="Include plain text in API request (includePlainTextContent=1)"),
     colored: bool = typer.Option(False, "--colored", help="Show colored TextTV display with ANSI codes"),
+    js8call: bool = typer.Option(False, "--js8call", "-j", help="Show JS8Call-compatible text (uppercase, limited charset)"),
+    compact: bool = typer.Option(False, "--compact", help="Compact mode: remove padding spaces/dots (use with --js8call)"),
 ):
     """Fetch and display a TextTV page from texttv.nu API."""
     parser = SyncTextTVParser()
@@ -43,6 +45,11 @@ def get_page(
         colored_text = page.get_colored_text()
         # Use built-in print() to preserve ANSI codes (Rich escapes them)
         print(colored_text)
+    elif js8call:
+        # Show JS8Call-compatible text
+        js8_text = page.get_js8call_text(compact=compact)
+        title_suffix = " (JS8Call Compact)" if compact else " (JS8Call Format)"
+        console.print(Panel(js8_text, title=f"Page {page_number} - {page.title}{title_suffix}"))
     elif plain_text:
         # Show API plain text
         api_plain = page.get_plain_text()
@@ -95,6 +102,8 @@ def parse_file(
     file_path: Path = typer.Argument(..., help="Path to JSON file"),
     clean_only: bool = typer.Option(False, "--clean", "-c", help="Show only cleaned text"),
     colored: bool = typer.Option(False, "--colored", help="Show colored TextTV display with ANSI codes"),
+    js8call: bool = typer.Option(False, "--js8call", "-j", help="Show JS8Call-compatible text (uppercase, limited charset)"),
+    compact: bool = typer.Option(False, "--compact", help="Compact mode: remove padding spaces/dots (use with --js8call)"),
 ):
     """Parse TextTV data from a local JSON file."""
     if not file_path.exists():
@@ -113,6 +122,11 @@ def parse_file(
         colored_text = page.get_colored_text()
         # Use built-in print() to preserve ANSI codes (Rich escapes them)
         print(colored_text)
+    elif js8call:
+        # Show JS8Call-compatible text
+        js8_text = page.get_js8call_text(compact=compact)
+        title_suffix = " (JS8Call Compact)" if compact else " (JS8Call Format)"
+        console.print(Panel(js8_text, title=f"Page {page.num} - {page.title}{title_suffix}"))
     elif clean_only:
         console.print(page.get_clean_text())
     else:

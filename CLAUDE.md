@@ -26,7 +26,7 @@ uv sync --dev
 # Run all tests
 uv run pytest
 
-# Run with coverage report
+# Run with coverage report (creates htmlcov/index.html)
 uv run pytest --cov=src --cov-report=html
 
 # Run specific test file
@@ -48,6 +48,15 @@ uv run ruff check src tests
 uv run mypy src
 ```
 
+### Building and Distribution
+```bash
+# Build package (creates dist/ directory with wheel and sdist)
+uv build
+
+# Install package locally in editable mode (development)
+uv pip install -e .
+```
+
 ### CLI Usage
 ```bash
 # Parse a local file with real API format
@@ -56,11 +65,23 @@ uv run texttv parse-file index.txt --clean
 # View colored TextTV display (with ANSI colors)
 uv run texttv parse-file index.txt --colored
 
+# View JS8Call-compatible text (uppercase, limited character set for ham radio)
+uv run texttv parse-file index.txt --js8call
+
+# View JS8Call-compatible text in compact mode (removes padding for efficient transmission)
+uv run texttv parse-file index.txt --js8call --compact
+
 # Fetch live page from texttv.nu API
 uv run texttv get-page 100
 
 # Fetch and display with colored TextTV rendering
 uv run texttv get-page 100 --colored
+
+# Fetch and display JS8Call-compatible text
+uv run texttv get-page 100 --js8call
+
+# Fetch and display JS8Call text in compact mode
+uv run texttv get-page 100 --js8call --compact
 
 # Fetch page with API plain text content
 uv run texttv get-page 100 --include-plain --plain-text
@@ -82,6 +103,9 @@ uv run python examples/examples.py
 
 # Advanced examples (7 different scenarios)
 uv run python examples/advanced_examples.py
+
+# Fetch live data from API (requires internet connection)
+uv run python examples/fetch_real_data.py
 ```
 
 ## Architecture Overview
@@ -195,12 +219,13 @@ Located in `TextTVPage.get_clean_text()` ([models.py](src/texttv/models.py)):
 ### TextTV Color System
 The HTML content uses CSS classes for colors that are mapped to ANSI codes:
 - **Background colors**: `bgBl` (black - standard TextTV background), `bgB` (blue), `bgW` (white), `bgR` (red), `bgG` (green), `bgY` (yellow), `bgC` (cyan), `bgM` (magenta)
-  - **Important**: `Bl` = Black (two letters), `B` = Blue (single letter)
+  - **CRITICAL**: `Bl` = Black (two letters), `B` = Blue (single letter) - this distinction is essential for correct parsing
 - **Foreground colors**: `W` (white), `Y` (yellow), `C` (cyan), `R` (red), `G` (green), `B` (black), `M` (magenta), `bl` (blue - lowercase)
 - **Text styles**: `DH` (double-height, rendered as bold in terminal)
-- The TerminalRenderer class handles conversion to ANSI escape codes for terminal display
+- The TerminalRenderer class ([terminal_renderer.py](src/texttv/terminal_renderer.py)) handles conversion to ANSI escape codes for terminal display
 - Standard TextTV pages use `bgBl` (black) as the main background color with `Y` (yellow) for headlines and `C` (cyan) for secondary text
 - Uses `lxml` parser to better preserve HTML structure (though HTML parsers still collapse whitespace, so padding is applied)
+- See [COLOR_REFERENCE.md](COLOR_REFERENCE.md) for the complete color mapping table
 
 ## Common Development Patterns
 
@@ -241,7 +266,7 @@ The HTML content uses CSS classes for colors that are mapped to ANSI codes:
 - All examples reference this file using `Path(__file__).parent.parent / "index.txt"`
 
 ### Text Extraction Methods
-The parser provides four ways to get text from a page:
+The parser provides five ways to get text from a page:
 
 1. **`page.get_clean_text()`** - Extracts text from HTML and cleans it (recommended)
    - Parses HTML with BeautifulSoup
@@ -263,7 +288,23 @@ The parser provides four ways to get text from a page:
    - Optional bold formatting for double-height text
    - Returns string with ANSI codes for terminal display
 
-4. **`page.content`** - Raw HTML content array
+4. **`page.get_js8call_text(compact=False)`** - JS8Call-compatible text for ham radio transmission
+   - Converts to uppercase (JS8Call primarily uses uppercase)
+   - Filters to JS8Call-supported character set:
+     - Uppercase A-Z, numbers 0-9, space
+     - Common punctuation: `./?+-\`~!@#$%^&*()_=[]\{}|;:'",&<>,`
+     - Extended Latin-1 including Swedish Å, Ä, Ö
+   - Maps unsupported characters (smart quotes, em/en dashes, ellipsis) to safe alternatives
+   - **Compact mode** (`compact=True`): Removes padding for efficient transmission
+     - Reduces multiple consecutive spaces to single space
+     - Reduces multiple dots (....) to single dot (.)
+     - Reduces multiple dashes (----) to single dash (-)
+     - Preserves all letters, numbers, and actual content
+     - Strips leading/trailing padding characters
+   - Ideal for transmitting Swedish TextTV over JS8Call digital mode
+   - **Note**: Swedish characters (ÅÄÖ) are fully supported in JS8Call
+
+5. **`page.content`** - Raw HTML content array
    - Original HTML from the API
    - Useful for custom processing
 
