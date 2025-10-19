@@ -1,7 +1,6 @@
 """Test cases for TextTV Parser."""
 
 import json
-from pathlib import Path
 import pytest
 from texttv.models import TextTVPage
 from texttv.parser import SyncTextTVParser
@@ -10,18 +9,22 @@ from texttv.parser import SyncTextTVParser
 @pytest.fixture
 def sample_data():
     """Sample TextTV API data for testing (texttv.nu format)."""
-    return [{
-        "num": "100",
-        "title": "Nyheter",
-        "content": ["<div class=\"root\"><span class=\"line\">Regeringen presenterar ny klimatpolitik</span><span class=\"line\">Statsministern meddelade idag att regeringen</span></div>"],
-        "content_plain": [],
-        "next_page": "101",
-        "prev_page": "99",
-        "date_updated_unix": 1697200000,
-        "permalink": "https://texttv.nu/100",
-        "id": "12345",
-        "breadcrumbs": []
-    }]
+    return [
+        {
+            "num": "100",
+            "title": "Nyheter",
+            "content": [
+                '<div class="root"><span class="line">Regeringen presenterar ny klimatpolitik</span><span class="line">Statsministern meddelade idag att regeringen</span></div>'
+            ],
+            "content_plain": [],
+            "next_page": "101",
+            "prev_page": "99",
+            "date_updated_unix": 1697200000,
+            "permalink": "https://texttv.nu/100",
+            "id": "12345",
+            "breadcrumbs": [],
+        }
+    ]
 
 
 def test_texttv_page_parsing(sample_data):
@@ -55,7 +58,7 @@ def test_file_parsing(tmp_path, sample_data):
     """Test parsing from file."""
     # Create temporary file
     temp_file = tmp_path / "test.json"
-    with open(temp_file, 'w') as f:
+    with open(temp_file, "w") as f:
         json.dump(sample_data, f)
 
     parser = SyncTextTVParser()
@@ -77,22 +80,26 @@ def test_invalid_file_parsing():
 def test_api_format_parsing(tmp_path):
     """Test parsing texttv.nu API format."""
     # Sample API format data
-    api_data = [{
-        "num": "100",
-        "title": "Nyheter",
-        "content": ["<div class=\"root\"><span class=\"line\">Test content</span></div>"],
-        "content_plain": [],
-        "next_page": "101",
-        "prev_page": "99",
-        "date_updated_unix": 1697200000,
-        "permalink": "https://texttv.nu/100",
-        "id": "12345",
-        "breadcrumbs": []
-    }]
+    api_data = [
+        {
+            "num": "100",
+            "title": "Nyheter",
+            "content": [
+                '<div class="root"><span class="line">Test content</span></div>'
+            ],
+            "content_plain": [],
+            "next_page": "101",
+            "prev_page": "99",
+            "date_updated_unix": 1697200000,
+            "permalink": "https://texttv.nu/100",
+            "id": "12345",
+            "breadcrumbs": [],
+        }
+    ]
 
     # Write to temp file
     temp_file = tmp_path / "api.json"
-    with open(temp_file, 'w') as f:
+    with open(temp_file, "w") as f:
         json.dump(api_data, f)
 
     # Parse the file
@@ -111,14 +118,16 @@ def test_js8call_text_conversion():
     sample_data = {
         "num": "100",
         "title": "Nyheter",
-        "content": ["<div>Regeringen presenterar åtgärder<br>Miljön och klimatet<br>Räddningstjänsten räddade öar</div>"],
+        "content": [
+            "<div>Regeringen presenterar åtgärder<br>Miljön och klimatet<br>Räddningstjänsten räddade öar</div>"
+        ],
         "content_plain": [],
         "next_page": "101",
         "prev_page": "99",
         "date_updated_unix": 1697200000,
         "permalink": "https://texttv.nu/100",
         "id": "12345",
-        "breadcrumbs": []
+        "breadcrumbs": [],
     }
 
     page = TextTVPage.model_validate(sample_data)
@@ -149,14 +158,16 @@ def test_js8call_special_characters():
     sample_data = {
         "num": "100",
         "title": "Test",
-        "content": ["<div>Test \u2013 en dash<br>Test \u2014 em dash<br>Test \u201csmart\u201d quotes<br>Test \u2018curly\u2019 quotes<br>Test\u2026 ellipsis</div>"],
+        "content": [
+            "<div>Test \u2013 en dash<br>Test \u2014 em dash<br>Test \u201csmart\u201d quotes<br>Test \u2018curly\u2019 quotes<br>Test\u2026 ellipsis</div>"
+        ],
         "content_plain": [],
         "next_page": "101",
         "prev_page": "99",
         "date_updated_unix": 1697200000,
         "permalink": "https://texttv.nu/100",
         "id": "12345",
-        "breadcrumbs": []
+        "breadcrumbs": [],
     }
 
     page = TextTVPage.model_validate(sample_data)
@@ -194,7 +205,7 @@ def test_js8call_only_supported_chars():
         "date_updated_unix": 1697200000,
         "permalink": "https://texttv.nu/100",
         "id": "12345",
-        "breadcrumbs": []
+        "breadcrumbs": [],
     }
 
     page = TextTVPage.model_validate(sample_data)
@@ -219,14 +230,16 @@ def test_js8call_compact_mode():
     sample_data = {
         "num": "100",
         "title": "Test",
-        "content": ["<div>Test    with    multiple    spaces<br>Line with... lots.... of dots....<br>Some----dashes----here<br>Normal text here</div>"],
+        "content": [
+            "<div>Test    with    multiple    spaces<br>Line with... lots.... of dots....<br>Some----dashes----here<br>Normal text here</div>"
+        ],
         "content_plain": [],
         "next_page": "101",
         "prev_page": "99",
         "date_updated_unix": 1697200000,
         "permalink": "https://texttv.nu/100",
         "id": "12345",
-        "breadcrumbs": []
+        "breadcrumbs": [],
     }
 
     page = TextTVPage.model_validate(sample_data)
@@ -263,14 +276,16 @@ def test_js8call_compact_preserves_content():
     sample_data = {
         "num": "100",
         "title": "Test",
-        "content": ["<div>News    123<br>Weather....forecast<br>Temperature----20C</div>"],
+        "content": [
+            "<div>News    123<br>Weather....forecast<br>Temperature----20C</div>"
+        ],
         "content_plain": [],
         "next_page": "101",
         "prev_page": "99",
         "date_updated_unix": 1697200000,
         "permalink": "https://texttv.nu/100",
         "id": "12345",
-        "breadcrumbs": []
+        "breadcrumbs": [],
     }
 
     page = TextTVPage.model_validate(sample_data)
