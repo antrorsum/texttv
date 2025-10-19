@@ -3,6 +3,10 @@ name = "texttv"
 version = "0.1.0"
 description = "A Python application to parse and clean data from Sweden SVT TextTV REST API"
 readme = "README.md"
+license = {text = "MIT"}
+authors = [
+    {name = "Stefan Sundkvist"}
+]
 requires-python = ">=3.9"
 dependencies = [
     "httpx>=0.25.0",

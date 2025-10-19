@@ -179,6 +179,12 @@ The real TextTV API:
 
 See [API_FORMATS.md](API_FORMATS.md) for detailed documentation on the API format.
 
+## Attribution
+
+This project was developed with assistance from [Claude Code](https://claude.com/claude-code), an AI-powered coding assistant by Anthropic.
+
 ## License
 
-MIT License - see LICENSE file for details.
+MIT License - see [LICENSE](LICENSE) file for details.
+
+Copyright (c) 2025 Stefan Sundkvist
