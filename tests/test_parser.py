@@ -112,8 +112,8 @@ def test_api_format_parsing(tmp_path):
     assert "Test content" in page.get_clean_text()
 
 
-def test_js8call_text_conversion():
-    """Test JS8Call text conversion with Swedish characters."""
+def test_compact_text_conversion():
+    """Test compact text conversion with Swedish characters."""
     # Sample data with Swedish characters and mixed case
     sample_data = {
         "num": "100",
@@ -131,29 +131,29 @@ def test_js8call_text_conversion():
     }
 
     page = TextTVPage.model_validate(sample_data)
-    js8_text = page.get_js8call_text()
+    compact_text = page.get_compact_text()
 
     # Should be uppercase
-    assert js8_text.isupper()
+    assert compact_text.isupper()
 
     # Should contain Swedish characters in uppercase
-    assert "Å" in js8_text
-    assert "Ö" in js8_text
-    assert "Ä" in js8_text
+    assert "Å" in compact_text
+    assert "Ö" in compact_text
+    assert "Ä" in compact_text
 
     # Should not contain lowercase
-    assert "å" not in js8_text
-    assert "ö" not in js8_text
-    assert "ä" not in js8_text
+    assert "å" not in compact_text
+    assert "ö" not in compact_text
+    assert "ä" not in compact_text
 
     # Should contain the actual content
-    assert "REGERINGEN" in js8_text
-    assert "MILJÖN" in js8_text
-    assert "RÄDDNINGSTJÄNSTEN" in js8_text
+    assert "REGERINGEN" in compact_text
+    assert "MILJÖN" in compact_text
+    assert "RÄDDNINGSTJÄNSTEN" in compact_text
 
 
-def test_js8call_special_characters():
-    """Test JS8Call handling of special characters."""
+def test_compact_special_characters():
+    """Test compact text handling of special characters."""
     # Sample data with special characters (using actual special Unicode chars)
     sample_data = {
         "num": "100",
@@ -171,30 +171,30 @@ def test_js8call_special_characters():
     }
 
     page = TextTVPage.model_validate(sample_data)
-    js8_text = page.get_js8call_text()
+    compact_text = page.get_compact_text()
 
-    # Dashes should be converted to hyphen
-    assert "-" in js8_text
-    assert "\u2013" not in js8_text  # en dash
-    assert "\u2014" not in js8_text  # em dash
+    # Dashes should be converted to hyphen (but compacted to single dash)
+    assert "-" in compact_text
+    assert "\u2013" not in compact_text  # en dash
+    assert "\u2014" not in compact_text  # em dash
 
     # Smart quotes should be converted to straight quotes
-    assert '"' in js8_text
-    assert "\u201c" not in js8_text  # left double quote
-    assert "\u201d" not in js8_text  # right double quote
+    assert '"' in compact_text
+    assert "\u201c" not in compact_text  # left double quote
+    assert "\u201d" not in compact_text  # right double quote
 
     # Curly quotes should be converted to straight apostrophe
-    assert "'" in js8_text
-    assert "\u2018" not in js8_text  # left single quote
-    assert "\u2019" not in js8_text  # right single quote
+    assert "'" in compact_text
+    assert "\u2018" not in compact_text  # left single quote
+    assert "\u2019" not in compact_text  # right single quote
 
-    # Ellipsis should be converted to three periods
-    assert "..." in js8_text
-    assert "\u2026" not in js8_text  # horizontal ellipsis
+    # Ellipsis should be converted to periods (then compacted to single period)
+    assert "." in compact_text
+    assert "\u2026" not in compact_text  # horizontal ellipsis
 
 
-def test_js8call_only_supported_chars():
-    """Test that JS8Call text only contains supported characters."""
+def test_compact_only_supported_chars():
+    """Test that compact text only contains supported characters."""
     sample_data = {
         "num": "100",
         "title": "Test",
@@ -209,10 +209,10 @@ def test_js8call_only_supported_chars():
     }
 
     page = TextTVPage.model_validate(sample_data)
-    js8_text = page.get_js8call_text()
+    compact_text = page.get_compact_text()
 
-    # Define JS8Call supported characters
-    js8call_chars = set(
+    # Define compact text supported characters
+    compact_chars = set(
         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
         "0123456789"
         r" ./?+-`~!@#$%^&*()_=[]\{}|;:'\"&<>,"
@@ -221,12 +221,12 @@ def test_js8call_only_supported_chars():
     )
 
     # Check that all characters in output are supported
-    for char in js8_text:
-        assert char in js8call_chars, f"Unsupported character: {char}"
+    for char in compact_text:
+        assert char in compact_chars, f"Unsupported character: {char}"
 
 
-def test_js8call_compact_mode():
-    """Test JS8Call compact mode removes padding."""
+def test_compact_removes_padding():
+    """Test that compact text removes padding."""
     sample_data = {
         "num": "100",
         "title": "Test",
@@ -243,15 +243,7 @@ def test_js8call_compact_mode():
     }
 
     page = TextTVPage.model_validate(sample_data)
-
-    # Normal mode
-    normal = page.get_js8call_text()
-
-    # Compact mode
-    compact = page.get_js8call_text(compact=True)
-
-    # Compact should be shorter
-    assert len(compact) < len(normal)
+    compact = page.get_compact_text()
 
     # Multiple spaces should be reduced to single space
     assert "    " not in compact
@@ -271,8 +263,8 @@ def test_js8call_compact_mode():
     assert "NORMAL TEXT HERE" in compact
 
 
-def test_js8call_compact_preserves_content():
-    """Test that compact mode preserves actual content (letters and numbers)."""
+def test_compact_preserves_content():
+    """Test that compact text preserves actual content (letters and numbers)."""
     sample_data = {
         "num": "100",
         "title": "Test",
@@ -289,7 +281,7 @@ def test_js8call_compact_preserves_content():
     }
 
     page = TextTVPage.model_validate(sample_data)
-    compact = page.get_js8call_text(compact=True)
+    compact = page.get_compact_text()
 
     # All content should be preserved
     assert "NEWS" in compact

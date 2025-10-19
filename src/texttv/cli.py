@@ -13,46 +13,45 @@ from rich.panel import Panel
 from .parser import TextTVParser, SyncTextTVParser
 
 app = typer.Typer(
-    name="texttv", help="Parse and clean data from Sweden SVT TextTV REST API"
+    name="texttv",
+    help="Parse and clean data from Sweden SVT TextTV REST API. Default: fetches page 100."
 )
 console = Console()
 
 
-@app.command()
+@app.command(name="get-page")
 def get_page(
-    page_number: str = typer.Argument(..., help="Page number (e.g., '100')"),
+    page_number: str = typer.Argument("100", help="Page number to fetch"),
     output: Optional[Path] = typer.Option(None, "--output", "-o", help="Save to file"),
-    clean_only: bool = typer.Option(
-        False, "--clean", "-c", help="Show only cleaned text"
+    full: bool = typer.Option(
+        False, "--full", "-f", help="Show full page info with table"
     ),
     plain_text: bool = typer.Option(
         False,
         "--plain-text",
         "-p",
-        help="Show API plain text (requires includePlainTextContent=1)",
+        help="Show API plain text",
     ),
     include_plain: bool = typer.Option(
         False,
         "--include-plain",
-        help="Include plain text in API request (includePlainTextContent=1)",
+        help="Include plain text in API request (auto-enabled with --plain-text)",
     ),
     colored: bool = typer.Option(
         False, "--colored", help="Show colored TextTV display with ANSI codes"
     ),
-    js8call: bool = typer.Option(
-        False,
-        "--js8call",
-        "-j",
-        help="Show JS8Call-compatible text (uppercase, limited charset)",
-    ),
     compact: bool = typer.Option(
         False,
         "--compact",
-        help="Compact mode: remove padding spaces/dots (use with --js8call)",
+        help="Show compact text (uppercase, limited charset, no padding)",
     ),
 ):
     """Fetch and display a TextTV page from texttv.nu API."""
     parser = SyncTextTVParser()
+
+    # Auto-enable include_plain if plain_text is requested
+    if plain_text and not include_plain:
+        include_plain = True
 
     with console.status(f"Fetching page {page_number}..."):
         page = parser.get_page(page_number, include_plain_text=include_plain)
@@ -66,12 +65,11 @@ def get_page(
         colored_text = page.get_colored_text()
         # Use built-in print() to preserve ANSI codes (Rich escapes them)
         print(colored_text)
-    elif js8call:
-        # Show JS8Call-compatible text
-        js8_text = page.get_js8call_text(compact=compact)
-        title_suffix = " (JS8Call Compact)" if compact else " (JS8Call Format)"
+    elif compact:
+        # Show compact text
+        compact_text = page.get_compact_text()
         console.print(
-            Panel(js8_text, title=f"Page {page_number} - {page.title}{title_suffix}")
+            Panel(compact_text, title=f"Page {page_number} - {page.title} (Compact)")
         )
     elif plain_text:
         # Show API plain text
@@ -85,12 +83,9 @@ def get_page(
             )
         else:
             console.print(
-                "[yellow]No plain text available. Use --include-plain to request it from API.[/yellow]"
+                "[yellow]No plain text available.[/yellow]"
             )
-    elif clean_only:
-        text = page.get_clean_text()
-        console.print(Panel(text, title=f"Page {page_number} - {page.title}"))
-    else:
+    elif full:
         # Display full page info
         from datetime import datetime
 
@@ -115,6 +110,11 @@ def get_page(
         console.print(table)
         console.print("\n")
         console.print(Panel(page.get_clean_text(), title="Cleaned Text"))
+    else:
+        # Default: show clean text only
+        text = page.get_clean_text()
+        console.print(Panel(text, title=f"Page {page_number} - {page.title}"))
+
 
     if output:
         from datetime import datetime
@@ -143,16 +143,10 @@ def parse_file(
     colored: bool = typer.Option(
         False, "--colored", help="Show colored TextTV display with ANSI codes"
     ),
-    js8call: bool = typer.Option(
-        False,
-        "--js8call",
-        "-j",
-        help="Show JS8Call-compatible text (uppercase, limited charset)",
-    ),
     compact: bool = typer.Option(
         False,
         "--compact",
-        help="Compact mode: remove padding spaces/dots (use with --js8call)",
+        help="Show compact text (uppercase, limited charset, no padding)",
     ),
 ):
     """Parse TextTV data from a local JSON file."""
@@ -172,12 +166,11 @@ def parse_file(
         colored_text = page.get_colored_text()
         # Use built-in print() to preserve ANSI codes (Rich escapes them)
         print(colored_text)
-    elif js8call:
-        # Show JS8Call-compatible text
-        js8_text = page.get_js8call_text(compact=compact)
-        title_suffix = " (JS8Call Compact)" if compact else " (JS8Call Format)"
+    elif compact:
+        # Show compact text
+        compact_text = page.get_compact_text()
         console.print(
-            Panel(js8_text, title=f"Page {page.num} - {page.title}{title_suffix}")
+            Panel(compact_text, title=f"Page {page.num} - {page.title} (Compact)")
         )
     elif clean_only:
         console.print(page.get_clean_text())
@@ -232,5 +225,22 @@ def search(
         console.print()
 
 
-if __name__ == "__main__":
+def cli():
+    """Main CLI entry point."""
+    import sys
+
+    # Don't insert default command if --help is present
+    if '--help' not in sys.argv and '-h' not in sys.argv:
+        # If no command is given (only options or just 'texttv'), default to get-page
+        if len(sys.argv) == 1 or (len(sys.argv) > 1 and not any(arg in ['get-page', 'parse-file', 'search'] for arg in sys.argv)):
+            # Check if first non-option arg looks like a page number or if it's just options
+            has_subcommand = any(arg in ['get-page', 'parse-file', 'search'] for arg in sys.argv[1:])
+            if not has_subcommand:
+                # Insert 'get-page' as the command
+                sys.argv.insert(1, 'get-page')
+
     app()
+
+
+if __name__ == "__main__":
+    cli()

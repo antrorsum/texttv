@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-texttv = "texttv.cli:app"
+texttv = "texttv.cli:cli"
 
 [project.optional-dependencies]
 dev = [

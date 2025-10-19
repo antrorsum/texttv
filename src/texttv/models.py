@@ -94,10 +94,10 @@ class TextTVPage(BaseModel):
         html_content = "".join(self.content)
         return renderer.render_html(html_content)
 
-    def get_js8call_text(self, compact: bool = False) -> str:
-        r"""Get JS8Call-compatible text with limited character set.
+    def get_compact_text(self) -> str:
+        r"""Get compact text with limited character set for efficient transmission.
 
-        JS8Call supports:
+        Supports:
         - Uppercase letters A-Z
         - Numbers 0-9
         - Space
@@ -109,14 +109,10 @@ class TextTVPage(BaseModel):
         1. Starts with clean text (get_clean_text())
         2. Converts to uppercase
         3. Replaces unsupported characters with safe alternatives
-        4. Optionally removes padding/duplicates for compact transmission
-
-        Args:
-            compact: If True, removes padding characters (repeated spaces, dots)
-                    to minimize transmission length. Preserves content letters/numbers.
+        4. Removes padding/duplicates for compact transmission
 
         Returns:
-            JS8Call-compatible text string (uppercase, limited character set)
+            Compact text string (uppercase, limited character set)
         """
         # Start with clean text
         text = self.get_clean_text()
@@ -200,14 +196,13 @@ class TextTVPage(BaseModel):
             if filtered_line.strip():
                 result_lines.append(filtered_line.strip())
 
-        # Apply compact mode if requested
-        if compact:
-            result_lines = self._compact_js8call_lines(result_lines)
+        # Always apply compact mode
+        result_lines = self._compact_lines(result_lines)
 
         return "\n".join(result_lines)
 
-    def _compact_js8call_lines(self, lines: list[str]) -> list[str]:
-        """Remove padding characters from JS8Call text for compact transmission.
+    def _compact_lines(self, lines: list[str]) -> list[str]:
+        """Remove padding characters from text for compact transmission.
 
         Removes:
         - Multiple consecutive spaces (keeps single space)

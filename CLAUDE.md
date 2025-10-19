@@ -65,11 +65,8 @@ uv run texttv parse-file index.txt --clean
 # View colored TextTV display (with ANSI colors)
 uv run texttv parse-file index.txt --colored
 
-# View JS8Call-compatible text (uppercase, limited character set for ham radio)
-uv run texttv parse-file index.txt --js8call
-
-# View JS8Call-compatible text in compact mode (removes padding for efficient transmission)
-uv run texttv parse-file index.txt --js8call --compact
+# View compact text (uppercase, limited character set, no padding)
+uv run texttv parse-file index.txt --compact
 
 # Fetch live page from texttv.nu API
 uv run texttv get-page 100
@@ -77,11 +74,8 @@ uv run texttv get-page 100
 # Fetch and display with colored TextTV rendering
 uv run texttv get-page 100 --colored
 
-# Fetch and display JS8Call-compatible text
-uv run texttv get-page 100 --js8call
-
-# Fetch and display JS8Call text in compact mode
-uv run texttv get-page 100 --js8call --compact
+# Fetch and display compact text
+uv run texttv get-page 100 --compact
 
 # Fetch page with API plain text content
 uv run texttv get-page 100 --include-plain --plain-text
@@ -288,21 +282,19 @@ The parser provides five ways to get text from a page:
    - Optional bold formatting for double-height text
    - Returns string with ANSI codes for terminal display
 
-4. **`page.get_js8call_text(compact=False)`** - JS8Call-compatible text for ham radio transmission
-   - Converts to uppercase (JS8Call primarily uses uppercase)
-   - Filters to JS8Call-supported character set:
+4. **`page.get_compact_text()`** - Compact text with limited character set for efficient transmission
+   - Converts to uppercase
+   - Filters to supported character set:
      - Uppercase A-Z, numbers 0-9, space
      - Common punctuation: `./?+-\`~!@#$%^&*()_=[]\{}|;:'",&<>,`
      - Extended Latin-1 including Swedish Å, Ä, Ö
    - Maps unsupported characters (smart quotes, em/en dashes, ellipsis) to safe alternatives
-   - **Compact mode** (`compact=True`): Removes padding for efficient transmission
+   - Always removes padding for compact transmission:
      - Reduces multiple consecutive spaces to single space
      - Reduces multiple dots (....) to single dot (.)
      - Reduces multiple dashes (----) to single dash (-)
      - Preserves all letters, numbers, and actual content
      - Strips leading/trailing padding characters
-   - Ideal for transmitting Swedish TextTV over JS8Call digital mode
-   - **Note**: Swedish characters (ÅÄÖ) are fully supported in JS8Call
 
 5. **`page.content`** - Raw HTML content array
    - Original HTML from the API
