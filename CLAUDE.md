@@ -195,30 +195,30 @@ Located in `TextTVPage.get_clean_text()` ([models.py](src/texttv/models.py)):
 ### TextTV Graphics (bgImg)
 - TextTV uses custom 13×16 pixel GIF images for graphical characters (logos, weather symbols, decorative elements)
 - These are referenced as `bgImg` class with URLs like `https://l.texttv.nu/storage/chars/693852549.gif`
-- The terminal renderer converts these to Unicode █ (full block) characters with appropriate foreground/background colors
-- This approximates the visual appearance while remaining text-based
+- The terminal renderer uses Unicode Legacy Computing symbols (U+1FB00-U+1FB3B) for mosaic graphics
+- GIF IDs are mapped to appropriate mosaic characters in [gif_char_mapping.json](gif_char_mapping.json)
 - Example: The "SVT Text" logo on lines 2-5 of page 100 is composed of bgImg characters
 - Weather maps (e.g., page 401) use colored bgImg blocks to show cloud cover, temperature zones, etc.
 
-### Known Limitations
-- **Whitespace collapsing**: HTML parsers (including lxml) collapse multiple consecutive spaces to a single space
-  - This affects text alignment slightly (e.g., some headlines may have 1 space instead of 2)
-  - Lines are still padded to exactly 40 characters, maintaining the overall format
-  - Proper fix would require writing a custom HTML parser that preserves raw whitespace
-- **bgImg graphics**: Currently rendered as solid blocks (█) rather than the actual pixel patterns
-  - The "SVT Text" logo appears as a block pattern rather than clear lettering
-  - Decorative bars and weather symbols are visible but not pixel-perfect
-  - Future enhancement: Download GIFs, analyze pixels, map to Unicode box-drawing characters
+### Whitespace Preservation
+- **Fixed**: The renderer now preserves exact whitespace from the HTML
+- Uses non-breaking space (U+00A0) as placeholder during parsing to prevent HTML parser from collapsing spaces
+- Placeholders are restored to regular spaces after rendering
+- This ensures perfect alignment of TextTV graphics and logos (e.g., "SVT Text" logo)
+- Lines are padded to exactly 40 characters using the last background color of the line
 
 ### TextTV Color System
 The HTML content uses CSS classes for colors that are mapped to ANSI codes:
-- **Background colors**: `bgBl` (black - standard TextTV background), `bgB` (blue), `bgW` (white), `bgR` (red), `bgG` (green), `bgY` (yellow), `bgC` (cyan), `bgM` (magenta)
+- **Background colors**: `bgBl` (black), `bgB` (blue), `bgW` (white), `bgR` (red), `bgG` (green), `bgY` (yellow), `bgC` (cyan), `bgM` (magenta)
   - **CRITICAL**: `Bl` = Black (two letters), `B` = Blue (single letter) - this distinction is essential for correct parsing
-- **Foreground colors**: `W` (white), `Y` (yellow), `C` (cyan), `R` (red), `G` (green), `B` (black), `M` (magenta), `bl` (blue - lowercase)
+- **Foreground colors**: `W` (white), `Y` (yellow), `C` (cyan), `R` (red), `G` (green), `B` (blue), `M` (magenta), `bl` (black)
+  - **CRITICAL**: `B` (capital) = Blue FG, `bl` (lowercase) = Black FG - opposite of background!
 - **Text styles**: `DH` (double-height, rendered as bold in terminal)
+- **Bright colors**: The renderer uses bright ANSI colors (90-97 FG, 100-107 BG) by default for better visibility
+  - Exception: Red uses standard ANSI red (31/41) for correct weather map appearance
+  - Can be disabled by passing `use_bright_colors=False` to TerminalRenderer
+- **Solid color blocks**: When `bgImg` has only a background color (no foreground), the renderer automatically sets matching foreground color to create solid blocks
 - The TerminalRenderer class ([terminal_renderer.py](src/texttv/terminal_renderer.py)) handles conversion to ANSI escape codes for terminal display
-- Standard TextTV pages use `bgBl` (black) as the main background color with `Y` (yellow) for headlines and `C` (cyan) for secondary text
-- Uses `lxml` parser to better preserve HTML structure (though HTML parsers still collapse whitespace, so padding is applied)
 - See [COLOR_REFERENCE.md](COLOR_REFERENCE.md) for the complete color mapping table
 
 ## Common Development Patterns

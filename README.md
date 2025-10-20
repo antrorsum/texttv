@@ -18,6 +18,7 @@ This interactive guide will walk you through all features!
 
 - 🇸🇪 Parse Sweden SVT TextTV pages from REST API
 - 🧹 Clean and extract readable text from TextTV format
+- 🎨 **ANSI colored terminal rendering** with authentic TextTV display
 - 📝 Export cleaned data to JSON
 - 🔍 Search across multiple pages
 - 🚀 Async and sync API support
@@ -46,12 +47,18 @@ uv run python main.py
 
 # Parse a file and show clean text only
 uv run texttv parse-file index.txt --clean
+
+# View with ANSI colored terminal rendering (authentic TextTV display!)
+uv run texttv parse-file index.txt --colored
 ```
 
 ### Fetch live data
 ```bash
 # Get page 100 (news)
 uv run texttv get-page 100
+
+# Get page with colored terminal rendering
+uv run texttv get-page 100 --colored
 
 # Get a specific subpage
 uv run texttv get-page 100 --subpage 2
