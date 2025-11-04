@@ -2,7 +2,7 @@
 
 import asyncio
 import json
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 import httpx
 from .models import TextTVPage
@@ -50,6 +50,28 @@ class TextTVParser:
         Returns:
             TextTVPage object or None if not found
         """
+        pages = await self.get_all_subpages(page_number, app, include_plain_text)
+        return pages[0] if pages else None
+
+    async def get_all_subpages(
+        self,
+        page_number: str,
+        app: str = "texttv-parser",
+        include_plain_text: bool = False,
+    ) -> list[TextTVPage]:
+        """Fetch all subpages for a specific TextTV page number.
+
+        The API returns a list of pages (subpages) for each page number.
+        Most pages have 1 subpage, but some may have multiple versions/updates.
+
+        Args:
+            page_number: Page number (e.g., "100", "150")
+            app: Application identifier for the API
+            include_plain_text: Include plain text content from API (sets includePlainTextContent=1)
+
+        Returns:
+            List of TextTVPage objects (empty list if not found)
+        """
         url = f"{self.base_url}/{page_number}"
         params = {"app": app}
         if include_plain_text:
@@ -61,21 +83,28 @@ class TextTVParser:
 
             data = response.json()
 
-            # Parse the response - API returns a list with one page
-            if isinstance(data, list) and len(data) > 0:
-                return TextTVPage.model_validate(data[0])
+            # Parse the response - API returns a list of pages (subpages)
+            if isinstance(data, list):
+                pages = []
+                for page_data in data:
+                    try:
+                        pages.append(TextTVPage.model_validate(page_data))
+                    except Exception as e:
+                        print(f"Error parsing subpage: {e}")
+                return pages
             elif isinstance(data, dict):
-                return TextTVPage.model_validate(data)
+                # Single page as dict (fallback)
+                return [TextTVPage.model_validate(data)]
             else:
                 print(f"Unexpected data format for page {page_number}")
-                return None
+                return []
 
         except httpx.HTTPError as e:
             print(f"HTTP error fetching page {page_number}: {e}")
-            return None
+            return []
         except Exception as e:
             print(f"Error parsing page {page_number}: {e}")
-            return None
+            return []
 
     async def get_page_range(
         self, start_page: str, end_page: str

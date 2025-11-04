@@ -82,6 +82,12 @@ uv run texttv get-page 100 --include-plain --plain-text
 
 # Search across pages
 uv run texttv search "klimat" --start 100 --end 110
+
+# Interactive browser with arrow key navigation
+uv run texttv browse
+
+# Start browsing from a specific page
+uv run texttv browse 300
 ```
 
 ### Running Examples
@@ -117,12 +123,14 @@ uv run python examples/fetch_real_data.py
    - `TextTVParser`: Async HTTP client for API access
    - `SyncTextTVParser`: Synchronous wrapper for simple usage
    - `parse_from_file()`: Parses local JSON files (expects texttv.nu format)
-   - `get_page()`: Fetches pages from texttv.nu API with `?app=` parameter
+   - `get_page()`: Fetches first subpage from texttv.nu API with `?app=` parameter
+   - `get_all_subpages()`: Fetches all subpages for a page number (API returns list of pages)
 
 3. **cli.py** - Command-line interface using Typer and Rich
    - `get-page`: Fetch and display pages from texttv.nu API
    - `parse-file`: Parse local JSON files in texttv.nu format
    - `search`: Search text across page ranges
+   - `browse`: Interactive TextTV browser with arrow key navigation (Left/Right for pages, Up/Down for subpages)
 
 4. **terminal_renderer.py** - ANSI terminal rendering
    - `TerminalRenderer`: Converts TextTV HTML with CSS classes to ANSI color codes
@@ -149,7 +157,14 @@ The parser works with the texttv.nu API format:
 }]
 ```
 
-The API returns a list with one page object. The parser handles both list format and single dict format.
+The API returns a list of page objects (subpages). Most pages have 1 subpage, but some may have multiple versions/updates. The parser handles both list format and single dict format.
+
+### Subpages
+- The API can return multiple subpages for a single page number (e.g., breaking news updates)
+- Each subpage has the same `num` but different `id` and potentially different content
+- Use `parser.get_all_subpages(page_number)` to fetch all subpages
+- Use `parser.get_page(page_number)` to fetch only the first subpage (default behavior)
+- The `browse` command allows navigating through subpages with Up/Down arrow keys
 
 ### Text Cleaning Algorithm
 
