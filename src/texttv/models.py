@@ -25,26 +25,53 @@ class TextTVPage(BaseModel):
         default_factory=list, description="Navigation breadcrumbs"
     )
 
-    def get_plain_text(self) -> Optional[str]:
+    def get_plain_text(self, subpage_index: Optional[int] = None) -> Optional[str]:
         """Get plain text content from API if available.
 
         This returns the plain text provided by the API when using
         includePlainTextContent=1 parameter. Returns None if not available.
+
+        Args:
+            subpage_index: Index of subpage to return (0-based). If None, returns all subpages concatenated.
 
         Returns:
             Plain text string or None if content_plain is empty
         """
         if not self.content_plain:
             return None
+
+        # If subpage_index is specified, return only that subpage
+        if subpage_index is not None:
+            if 0 <= subpage_index < len(self.content_plain):
+                return self.content_plain[subpage_index].strip()
+            else:
+                return None
+
+        # Default: return all subpages concatenated
         return "\n".join(self.content_plain).strip()
 
-    def get_clean_text(self) -> str:
-        """Extract and clean text from HTML content."""
+    def get_clean_text(self, subpage_index: Optional[int] = None) -> str:
+        """Extract and clean text from HTML content.
+
+        Args:
+            subpage_index: Index of subpage to extract (0-based). If None, extracts all subpages concatenated.
+
+        Returns:
+            Cleaned text string
+        """
         if not self.content:
             return ""
 
-        # Parse HTML content
-        html_content = "".join(self.content)
+        # If subpage_index is specified, parse only that subpage
+        if subpage_index is not None:
+            if 0 <= subpage_index < len(self.content):
+                html_content = self.content[subpage_index]
+            else:
+                return ""
+        else:
+            # Default: parse all subpages concatenated
+            html_content = "".join(self.content)
+
         soup = BeautifulSoup(html_content, "html.parser")
 
         # Remove script and style elements
@@ -75,7 +102,7 @@ class TextTVPage(BaseModel):
 
         return "\n".join(cleaned_lines).strip()
 
-    def get_colored_text(self, use_bold: bool = True) -> str:
+    def get_colored_text(self, use_bold: bool = True, subpage_index: Optional[int] = None) -> str:
         """Get colored terminal output with ANSI codes.
 
         This renders the TextTV page as it would appear on a real TextTV display,
@@ -83,6 +110,7 @@ class TextTVPage(BaseModel):
 
         Args:
             use_bold: Use bold text for double-height headings
+            subpage_index: Index of subpage to render (0-based). If None, renders all subpages concatenated.
 
         Returns:
             Colored text string with ANSI escape codes for terminal display
@@ -91,10 +119,28 @@ class TextTVPage(BaseModel):
             return ""
 
         renderer = TerminalRenderer(use_bold_for_double_height=use_bold)
-        html_content = "".join(self.content)
+
+        # If subpage_index is specified, render only that subpage
+        if subpage_index is not None:
+            if 0 <= subpage_index < len(self.content):
+                html_content = self.content[subpage_index]
+            else:
+                return ""
+        else:
+            # Default: render all subpages concatenated
+            html_content = "".join(self.content)
+
         return renderer.render_html(html_content)
 
-    def get_compact_text(self) -> str:
+    def get_subpage_count(self) -> int:
+        """Get the number of subpages in this page.
+
+        Returns:
+            Number of subpages (elements in content array)
+        """
+        return len(self.content) if self.content else 0
+
+    def get_compact_text(self, subpage_index: Optional[int] = None) -> str:
         r"""Get compact text with limited character set for efficient transmission.
 
         Supports:
@@ -111,11 +157,14 @@ class TextTVPage(BaseModel):
         3. Replaces unsupported characters with safe alternatives
         4. Removes padding/duplicates for compact transmission
 
+        Args:
+            subpage_index: Index of subpage to extract (0-based). If None, extracts all subpages concatenated.
+
         Returns:
             Compact text string (uppercase, limited character set)
         """
         # Start with clean text
-        text = self.get_clean_text()
+        text = self.get_clean_text(subpage_index=subpage_index)
         if not text:
             return ""
 

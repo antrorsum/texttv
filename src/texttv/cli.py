@@ -244,24 +244,24 @@ def browse(
         """Clear the terminal screen."""
         os.system('cls' if os.name == 'nt' else 'clear')
 
-    def display_page(pages, page_num, subpage_idx):
-        """Display a single page with navigation info."""
+    def display_page(page, page_num, subpage_idx):
+        """Display a single subpage with navigation info."""
         clear_screen()
 
-        if not pages:
+        if not page:
             print(f"Page {page_num} not found or empty")
             print("\n[←/→] Page  [↑/↓] Subpage  [q] Quit")
             return
 
-        # Get current page
-        page = pages[subpage_idx]
+        # Get total subpages count
+        total_subpages = page.get_subpage_count()
 
-        # Display colored TextTV output
-        colored_text = page.get_colored_text()
+        # Display colored TextTV output for the specific subpage
+        colored_text = page.get_colored_text(subpage_index=subpage_idx)
         print(colored_text)
 
         # Display navigation info
-        subpage_info = f" (subpage {subpage_idx + 1}/{len(pages)})" if len(pages) > 1 else ""
+        subpage_info = f" (subpage {subpage_idx + 1}/{total_subpages})" if total_subpages > 1 else ""
         print(f"\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
         print(f"Page {page_num}{subpage_info}")
         print(f"[←/→] Page  [↑/↓] Subpage  [q] Quit")
@@ -273,8 +273,8 @@ def browse(
 
         async with TextTVParser() as parser:
             # Fetch initial page
-            pages = await parser.get_all_subpages(str(current_page))
-            display_page(pages, current_page, current_subpage)
+            page = await parser.get_page(str(current_page))
+            display_page(page, current_page, current_subpage)
 
             while True:
                 try:
@@ -291,28 +291,30 @@ def browse(
                         if current_page > 100:
                             current_page -= 1
                             current_subpage = 0
-                            pages = await parser.get_all_subpages(str(current_page))
-                            display_page(pages, current_page, current_subpage)
+                            page = await parser.get_page(str(current_page))
+                            display_page(page, current_page, current_subpage)
 
                     elif key == readchar.key.RIGHT:
                         # Next page
                         if current_page < 999:
                             current_page += 1
                             current_subpage = 0
-                            pages = await parser.get_all_subpages(str(current_page))
-                            display_page(pages, current_page, current_subpage)
+                            page = await parser.get_page(str(current_page))
+                            display_page(page, current_page, current_subpage)
 
                     elif key == readchar.key.UP:
-                        # Previous subpage
-                        if pages and current_subpage > 0:
+                        # Previous subpage (within content array)
+                        if page and current_subpage > 0:
                             current_subpage -= 1
-                            display_page(pages, current_page, current_subpage)
+                            display_page(page, current_page, current_subpage)
 
                     elif key == readchar.key.DOWN:
-                        # Next subpage
-                        if pages and current_subpage < len(pages) - 1:
-                            current_subpage += 1
-                            display_page(pages, current_page, current_subpage)
+                        # Next subpage (within content array)
+                        if page:
+                            total_subpages = page.get_subpage_count()
+                            if current_subpage < total_subpages - 1:
+                                current_subpage += 1
+                                display_page(page, current_page, current_subpage)
 
                 except KeyboardInterrupt:
                     break
@@ -321,7 +323,7 @@ def browse(
                     print(f"\nError: {e}")
                     print("Press any key to continue...")
                     readchar.readkey()
-                    display_page(pages, current_page, current_subpage)
+                    display_page(page, current_page, current_subpage)
 
         # Clear screen on exit
         clear_screen()
