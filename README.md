@@ -25,6 +25,7 @@ This interactive guide will walk you through all features!
 - 🎯 Type-safe with Pydantic models
 - 💻 CLI interface with rich output
 - 🔄 **Supports texttv.nu API format**
+- ⌨️ **Interactive browser** with arrow key navigation
 
 ## Installation
 
@@ -60,11 +61,12 @@ uv run texttv get-page 100
 # Get page with colored terminal rendering
 uv run texttv get-page 100 --colored
 
-# Get a specific subpage
-uv run texttv get-page 100 --subpage 2
-
 # Save to file
 uv run texttv get-page 100 --output news.json
+
+# Interactive browser with arrow key navigation
+uv run texttv browse
+# Use ← → to change pages, ↑ ↓ to navigate subpages, q to quit
 ```
 
 ### Search functionality
@@ -101,12 +103,15 @@ from texttv import TextTVParser
 
 async def main():
     async with TextTVParser() as parser:
-        # Get a single page
+        # Get a single page (first subpage)
         page = await parser.get_page("100")
-        
+
+        # Get all subpages for a page number
+        subpages = await parser.get_all_subpages("100")
+
         # Get multiple pages
         pages = await parser.get_page_range("100", "105")
-        
+
         # Search across pages
         results = await parser.search_pages("klimat", (100, 110))
 
@@ -174,7 +179,9 @@ uv run mypy src
 
 Swedish TextTV uses a specific format:
 - Page numbers: 100-899 (100-199 = News, 150-159 = Sports, etc.)
-- Each page can have multiple subpages
+- Each page can have multiple subpages (versions/updates of the same page)
+- The API returns a list of subpages for each page number
+- Use the interactive browser (`texttv browse`) to navigate through pages and subpages
 - Content includes navigation, headers, and actual text
 - The parser extracts only the meaningful text content
 
