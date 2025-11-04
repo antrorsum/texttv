@@ -3,7 +3,7 @@
 import json
 import pytest
 from texttv.models import TextTVPage
-from texttv.parser import SyncTextTVParser
+from texttv.parser import SyncTextTVParser, TextTVParser
 
 
 @pytest.fixture
@@ -290,3 +290,170 @@ def test_compact_preserves_content():
     assert "FORECAST" in compact
     assert "TEMPERATURE" in compact
     assert "20C" in compact
+
+
+@pytest.mark.asyncio
+async def test_get_page_range_parallel():
+    """Test that get_page_range fetches pages in parallel."""
+    # Create mock pages
+    mock_pages = {
+        "100": TextTVPage(
+            num="100",
+            title="Page 100",
+            content=["<div>Content 100</div>"],
+            date_updated_unix=1697200000,
+            permalink="https://texttv.nu/100",
+            id="100",
+        ),
+        "101": TextTVPage(
+            num="101",
+            title="Page 101",
+            content=["<div>Content 101</div>"],
+            date_updated_unix=1697200000,
+            permalink="https://texttv.nu/101",
+            id="101",
+        ),
+        "102": TextTVPage(
+            num="102",
+            title="Page 102",
+            content=["<div>Content 102</div>"],
+            date_updated_unix=1697200000,
+            permalink="https://texttv.nu/102",
+            id="102",
+        ),
+    }
+
+    async with TextTVParser() as parser:
+        # Mock the get_page method to return our mock pages
+        async def mock_get_page(page_number, app="texttv-parser", include_plain_text=False):
+            return mock_pages.get(page_number)
+
+        parser.get_page = mock_get_page
+
+        # Fetch range
+        results = await parser.get_page_range("100", "102")
+
+        # Verify all pages were fetched
+        assert len(results) == 3
+        assert "100" in results
+        assert "101" in results
+        assert "102" in results
+        assert results["100"].title == "Page 100"
+        assert results["101"].title == "Page 101"
+        assert results["102"].title == "Page 102"
+
+
+@pytest.mark.asyncio
+async def test_get_page_range_handles_missing_pages():
+    """Test that get_page_range handles missing pages gracefully."""
+    # Create mock pages with one missing
+    mock_pages = {
+        "100": TextTVPage(
+            num="100",
+            title="Page 100",
+            content=["<div>Content 100</div>"],
+            date_updated_unix=1697200000,
+            permalink="https://texttv.nu/100",
+            id="100",
+        ),
+        "102": TextTVPage(
+            num="102",
+            title="Page 102",
+            content=["<div>Content 102</div>"],
+            date_updated_unix=1697200000,
+            permalink="https://texttv.nu/102",
+            id="102",
+        ),
+    }
+
+    async with TextTVParser() as parser:
+        # Mock the get_page method to return our mock pages
+        async def mock_get_page(page_number, app="texttv-parser", include_plain_text=False):
+            return mock_pages.get(page_number)
+
+        parser.get_page = mock_get_page
+
+        # Fetch range (101 is missing)
+        results = await parser.get_page_range("100", "102")
+
+        # Verify only existing pages are returned
+        assert len(results) == 2
+        assert "100" in results
+        assert "101" not in results  # Missing page should not be in results
+        assert "102" in results
+
+
+@pytest.mark.asyncio
+async def test_search_pages():
+    """Test search_pages functionality."""
+    # Create mock pages
+    mock_pages = {
+        "100": TextTVPage(
+            num="100",
+            title="Weather News",
+            content=["<div>The weather today is sunny</div>"],
+            date_updated_unix=1697200000,
+            permalink="https://texttv.nu/100",
+            id="100",
+        ),
+        "101": TextTVPage(
+            num="101",
+            title="Sports",
+            content=["<div>Football match results</div>"],
+            date_updated_unix=1697200000,
+            permalink="https://texttv.nu/101",
+            id="101",
+        ),
+        "102": TextTVPage(
+            num="102",
+            title="Weather Forecast",
+            content=["<div>Tomorrow weather will be rainy</div>"],
+            date_updated_unix=1697200000,
+            permalink="https://texttv.nu/102",
+            id="102",
+        ),
+    }
+
+    async with TextTVParser() as parser:
+        # Mock the get_page method
+        async def mock_get_page(page_number, app="texttv-parser", include_plain_text=False):
+            return mock_pages.get(page_number)
+
+        parser.get_page = mock_get_page
+
+        # Search for "weather"
+        results = await parser.search_pages("weather", (100, 102))
+
+        # Should find pages 100 and 102 (both contain "weather")
+        assert len(results) == 2
+        assert "100" in results
+        assert "101" not in results  # Doesn't contain "weather"
+        assert "102" in results
+
+
+@pytest.mark.asyncio
+async def test_search_pages_case_insensitive():
+    """Test that search_pages is case-insensitive."""
+    # Create mock page
+    mock_page = TextTVPage(
+        num="100",
+        title="News",
+        content=["<div>Regeringen presenterar KLIMATPOLITIK</div>"],
+        date_updated_unix=1697200000,
+        permalink="https://texttv.nu/100",
+        id="100",
+    )
+
+    async with TextTVParser() as parser:
+        # Mock the get_page method
+        async def mock_get_page(page_number, app="texttv-parser", include_plain_text=False):
+            return mock_page if page_number == "100" else None
+
+        parser.get_page = mock_get_page
+
+        # Search with different case
+        results = await parser.search_pages("klimat", (100, 100))
+
+        # Should find the page despite case difference
+        assert len(results) == 1
+        assert "100" in results

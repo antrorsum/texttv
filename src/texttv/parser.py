@@ -80,7 +80,7 @@ class TextTVParser:
     async def get_page_range(
         self, start_page: str, end_page: str
     ) -> Dict[str, TextTVPage]:
-        """Fetch multiple pages in a range.
+        """Fetch multiple pages in a range in parallel.
 
         Args:
             start_page: Starting page number
@@ -92,17 +92,18 @@ class TextTVParser:
         start_num = int(start_page)
         end_num = int(end_page)
 
-        tasks = []
-        for page_num in range(start_num, end_num + 1):
-            page_str = str(page_num)
-            task = self.get_page(page_str)
-            tasks.append((page_str, task))
+        # Create tasks for all pages
+        page_numbers = [str(page_num) for page_num in range(start_num, end_num + 1)]
+        tasks = [self.get_page(page_num) for page_num in page_numbers]
 
+        # Fetch all pages concurrently
+        pages = await asyncio.gather(*tasks)
+
+        # Build results dictionary, filtering out None values
         results = {}
-        for page_str, task in tasks:
-            page = await task
+        for page_num, page in zip(page_numbers, pages):
             if page:
-                results[page_str] = page
+                results[page_num] = page
 
         return results
 

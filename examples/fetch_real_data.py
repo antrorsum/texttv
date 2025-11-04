@@ -10,6 +10,7 @@ Usage:
 import sys
 import json
 import httpx
+from datetime import datetime
 from pathlib import Path
 from texttv import SyncTextTVParser
 
@@ -53,8 +54,8 @@ def fetch_page(page_number: str, save: bool = False):
         
         # Display results
         print("\n" + "="*70)
-        print(f"📄 Page {page.number}: {page.title}")
-        print(f"🕒 Updated: {page.updated}")
+        print(f"📄 Page {page.num}: {page.title}")
+        print(f"🕒 Updated: {datetime.fromtimestamp(page.date_updated_unix).strftime('%Y-%m-%d %H:%M:%S')}")
         print("="*70)
         print("\n" + page.get_clean_text())
         print("\n" + "="*70)
